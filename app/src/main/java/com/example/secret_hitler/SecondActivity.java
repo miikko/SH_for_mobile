@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class SecondActivity extends AppCompatActivity {
@@ -14,12 +15,25 @@ public class SecondActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
 
-        TextView roleTextView = findViewById(R.id.roleTextView);
+        ImageView roleImageView = findViewById(R.id.roleImageView);
         TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
         
         if (getIntent().hasExtra("com.example.secret_hitler.ROLE")) {
             String role = getIntent().getExtras().get("com.example.secret_hitler.ROLE").toString();
-            roleTextView.setText(role);
+
+            switch (role) {
+                case "Fascist":
+                    roleImageView.setImageResource(R.drawable.fascist_role);
+                    break;
+                case "Liberal":
+                    roleImageView.setImageResource(R.drawable.liberal_role);
+                    break;
+                case "Hitler":
+                    roleImageView.setImageResource(R.drawable.hitler_role);
+                    break;
+                default:
+                    break;
+            }
 
             String newline = System.getProperty("line.separator");
             String winConditions = "Your win conditions are:" + newline;

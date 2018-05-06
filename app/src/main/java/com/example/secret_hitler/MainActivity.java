@@ -36,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
                     case "Hitler":
 
                         break;
+                    default:
+                        break;
                 }
                 Intent confirmRoleIntent = new Intent(getApplicationContext(), SecondActivity.class);
                 confirmRoleIntent.putExtra("com.example.secret_hitler.ROLE", selectedRole);
