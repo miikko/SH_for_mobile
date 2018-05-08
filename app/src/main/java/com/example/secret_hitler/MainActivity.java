@@ -11,6 +11,8 @@ import android.widget.Spinner;
 
 public class MainActivity extends AppCompatActivity {
 
+    public DBHandler dbHandler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +41,11 @@ public class MainActivity extends AppCompatActivity {
                     default:
                         break;
                 }
+
+                Player newPlayer = new Player(selectedRole);
+                dbHandler = DBHandler.getInstance(getApplicationContext());
+                dbHandler.addNewPlayer(newPlayer);
+
                 Intent confirmRoleIntent = new Intent(getApplicationContext(), SecondActivity.class);
                 confirmRoleIntent.putExtra("com.example.secret_hitler.ROLE", selectedRole);
                 startActivity(confirmRoleIntent);

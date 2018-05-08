@@ -7,14 +7,19 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class SecondActivity extends AppCompatActivity {
-
+    public DBHandler dbHandler;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
 
+        dbHandler = DBHandler.getInstance(getApplicationContext());
+        String testRole = dbHandler.GetRole(0);
+        Toast toast = Toast.makeText(this, testRole, Toast.LENGTH_SHORT);
+        toast.show();
         ImageView roleImageView = findViewById(R.id.roleImageView);
         TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
         
