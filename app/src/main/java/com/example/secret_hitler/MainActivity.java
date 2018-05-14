@@ -18,36 +18,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final Spinner roleListSpin = findViewById(R.id.roleListSpin);
-        String[] roles = new String[] {"Liberal", "Fascist", "Hitler"};
-        ArrayAdapter <String>  adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, roles);
-        roleListSpin.setAdapter(adapter);
-
-        Button roleLockBtn = findViewById(R.id.roleLockBtn);
-        roleLockBtn.setOnClickListener(new View.OnClickListener() {
+        Button joinGameButton = findViewById(R.id.joinGameBtn);
+        joinGameButton.setOnClickListener(new View.OnClickListener() {
 
             public void onClick (View view) {
-                String selectedRole = roleListSpin.getSelectedItem().toString();
-                switch (selectedRole) {
-                    case "Liberal":
 
-                        break;
-                    case "Fascist":
-
-                        break;
-                    case "Hitler":
-
-                        break;
-                    default:
-                        break;
-                }
-
-                Player newPlayer = new Player(selectedRole);
+                Player newPlayer = new Player();
                 dbHandler = DBHandler.getInstance(getApplicationContext());
                 dbHandler.addNewPlayer(newPlayer);
+                int playerId = dbHandler.GetPlayerCount() - 1;
 
-                Intent confirmRoleIntent = new Intent(getApplicationContext(), SecondActivity.class);
-                confirmRoleIntent.putExtra("com.example.secret_hitler.ROLE", selectedRole);
+                Intent confirmRoleIntent = new Intent(getApplicationContext(), LobbyActivity.class);
+                confirmRoleIntent.putExtra("com.example.secret_hitler.PLAYER_ID", playerId);
                 startActivity(confirmRoleIntent);
             }
         });

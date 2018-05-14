@@ -19,7 +19,8 @@
         <activity android:name=".SecondActivity" />
         <activity android:name=".VotingActivity" />
         <activity android:name=".ShowVoteActivity" />
-        <activity android:name=".ShowFactionActivity"></activity>
+        <activity android:name=".ShowFactionActivity" />
+        <activity android:name=".LobbyActivity"></activity>
     </application>
 
 </manifest>

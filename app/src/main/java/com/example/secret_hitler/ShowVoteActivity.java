@@ -14,8 +14,6 @@ public class ShowVoteActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_vote);
 
-        dbHandler = DBHandler.getInstance(getApplicationContext());
-        dbHandler.ClearTable("playerDetails");
         ImageView voteImageView = findViewById(R.id.showVoteImageView);
 
         if (getIntent().hasExtra("com.example.secret_hitler.VOTE")) {
