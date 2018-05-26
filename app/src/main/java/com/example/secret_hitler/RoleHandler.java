@@ -4,10 +4,13 @@ import android.content.Context;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class RoleHandler {
 
     public DBHandler dbHandler;
+    Random rand;
 
 
     public void AssignRole(Context appContext, int playerID) {
@@ -128,5 +131,12 @@ public class RoleHandler {
         }
 
         dbHandler.SetRole(playerID, role);
+    }
+
+    public void AssignPresidency(Context appContext) {
+        dbHandler = DBHandler.getInstance(appContext);
+        int playerCount = dbHandler.GetPlayerCount();
+        int lotteryResult = rand.nextInt(playerCount);
+        //dbHandler.SetAsPresident(lotteryResult);
     }
 }

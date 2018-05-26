@@ -14,6 +14,8 @@ public class SecondActivity extends AppCompatActivity {
 
     public DBHandler dbHandler;
     private String role;
+    private int playerID;
+    private int playerCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,6 +25,7 @@ public class SecondActivity extends AppCompatActivity {
         dbHandler = DBHandler.getInstance(getApplicationContext());
         Button votingBtn = findViewById(R.id.votingBtn);
         Button showFactionBtn = findViewById(R.id.showFactionBtn);
+        Button statusBtn = findViewById(R.id.statusBtn);
 
         ImageView roleImageView = findViewById(R.id.roleImageView);
         TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
@@ -30,15 +33,17 @@ public class SecondActivity extends AppCompatActivity {
         role = "role";
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER_ID")) {
-            int playerID = (int) getIntent().getExtras().get("com.example.secret_hitler.PLAYER_ID");
+            playerID = (int) getIntent().getExtras().get("com.example.secret_hitler.PLAYER_ID");
             role = dbHandler.GetRole(playerID);
 
+            //Remove this after confirming that the role distribution works properly
             Log.d("PLAYERROLE", role);
             Log.d("PLAYERID", Integer.toString(playerID));
-            int playerCount = dbHandler.GetPlayerCount();
+            playerCount = dbHandler.GetPlayerCount();
             for (int i = 0; i < playerCount; i++) {
                 Log.d("ALLROLES","Player number " + (i + 1) + " role is " + dbHandler.GetRole(i));
             }
+            //
         }
 
         switch (role) {
@@ -54,7 +59,6 @@ public class SecondActivity extends AppCompatActivity {
             default:
                 break;
         }
-
         String newline = System.getProperty("line.separator");
         String winConditions = "Your win conditions are:" + newline;
         if (role.equals("Liberal")) {
@@ -64,6 +68,7 @@ public class SecondActivity extends AppCompatActivity {
         }
         winConditionsTextView.setText(winConditions);
 
+        playerCount = dbHandler.GetPlayerCount();
 
         votingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,6 +89,14 @@ public class SecondActivity extends AppCompatActivity {
                 }
                 showFaction.putExtra("com.example.secret_hitler.FACTION", faction);
                 startActivity(showFaction);
+            }
+        });
+
+        statusBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent showStatus = new Intent(getApplicationContext(), StatusActivity.class);
+                startActivity(showStatus);
             }
         });
     }

@@ -20,7 +20,8 @@
         <activity android:name=".VotingActivity" />
         <activity android:name=".ShowVoteActivity" />
         <activity android:name=".ShowFactionActivity" />
-        <activity android:name=".LobbyActivity"></activity>
+        <activity android:name=".LobbyActivity" />
+        <activity android:name=".StatusActivity"></activity>
     </application>
 
 </manifest>

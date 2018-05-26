@@ -72,12 +72,10 @@ public class DBHandler extends SQLiteOpenHelper {
 
     public String GetRole(int id) {
         db = this.getReadableDatabase();
-        //String query = "SELECT " + COLUMN_ROLE + " FROM " + TABLE_NAME;
         Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_ID, COLUMN_ROLE},COLUMN_ID + "=?", new String[]{String.valueOf(id)}, null, null, null, null);
         String role = "No role";
 
         if (cursor != null && cursor.moveToFirst()) {
-            //cursor.moveToPosition(id);
             role = cursor.getString(cursor.getColumnIndex(COLUMN_ROLE));
         }
         cursor.close();
