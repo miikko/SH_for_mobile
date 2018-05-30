@@ -3,7 +3,6 @@ package com.example.secret_hitler;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -25,7 +24,7 @@ public class LobbyActivity extends AppCompatActivity {
 
         Button startGameButton = findViewById(R.id.startGameBtn);
         startGameButton.setEnabled(false);
-        Button refreshButton = findViewById(R.id.refreshBtn);
+        Button lobbyRefreshButton = findViewById(R.id.lobbyRefreshBtn);
         Button resetButton = findViewById(R.id.resetBtn);
         TextView playerCountTextView = findViewById(R.id.playerCountTextView);
         TextView lobbyStatusTextView = findViewById(R.id.lobbyStatusTextView);
@@ -76,7 +75,7 @@ public class LobbyActivity extends AppCompatActivity {
             playerID = (int) getIntent().getExtras().get("com.example.secret_hitler.PLAYER_ID");
         }
 
-        refreshButton.setOnClickListener(new View.OnClickListener() {
+        lobbyRefreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent refresh = getIntent();

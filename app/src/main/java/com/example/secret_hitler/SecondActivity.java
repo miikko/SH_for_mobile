@@ -30,6 +30,9 @@ public class SecondActivity extends AppCompatActivity {
         ImageView roleImageView = findViewById(R.id.roleImageView);
         TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
 
+        if (dbHandler.RowCount("gameBoard") == 0) {
+            dbHandler.InitializeBoard();
+        }
         role = "role";
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER_ID")) {
