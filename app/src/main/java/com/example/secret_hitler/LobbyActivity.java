@@ -11,6 +11,7 @@ public class LobbyActivity extends AppCompatActivity {
 
     public DBHandler dbHandler;
     private RoleHandler roleHandler;
+    private Player thisPlayer;
     int playerID;
 
     @Override
@@ -71,8 +72,8 @@ public class LobbyActivity extends AppCompatActivity {
             startGameButton.setEnabled(true);
         }
 
-        if (getIntent().hasExtra("com.example.secret_hitler.PLAYER_ID")) {
-            playerID = (int) getIntent().getExtras().get("com.example.secret_hitler.PLAYER_ID");
+        if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
+            thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
 
         lobbyRefreshButton.setOnClickListener(new View.OnClickListener() {
@@ -95,9 +96,20 @@ public class LobbyActivity extends AppCompatActivity {
             startGameButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    roleHandler.AssignRole(getApplicationContext(), playerID);
+                    roleHandler.AssignRole(getApplicationContext(), thisPlayer);
+
+                    //Using this method gives all the players an equal chance of being the first president
+                    //If the presidency draw would happen individually on each device then the ones who click this button the fastest have a better chance of being a president.
+                    if (!dbHandler.PresidentExists()) {
+                        roleHandler.AssignFirstPresidency(getApplicationContext());
+                    }
+
+                    int presidentId = dbHandler.GetPresidentID();
+                    if (thisPlayer.id == presidentId) {
+                        thisPlayer.SetAsPresident();
+                    }
                     Intent startGameIntent = new Intent(getApplicationContext(), SecondActivity.class);
-                    startGameIntent.putExtra("com.example.secret_hitler.PLAYER_ID", playerID);
+                    startGameIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                     startActivity(startGameIntent);
                 }
             });

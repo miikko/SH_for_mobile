@@ -10,18 +10,23 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import java.io.Console;
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class DBHandler extends SQLiteOpenHelper {
 
     private static DBHandler sInstance;
 
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     private static final String DATABASE_NAME = "player.db";
 
     private static final String PLAYER_TABLE_NAME = "playerDetails";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_ROLE = "role";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_IS_PRESIDENT = "isPresident";
+    private static final String COLUMN_IS_CHANCELLOR = "isChancellor";
+    private static final String COLUMN_IS_ALIVE = "isAlive";
 
     private static final String BOARD_TABLE_NAME = "gameBoard";
     //private static final String COLUMN_ID = "id";
@@ -29,7 +34,8 @@ public class DBHandler extends SQLiteOpenHelper {
     private static final String COLUMN_LIBERAL_LAW_COUNT = "liberalLawCount";
     SQLiteDatabase db;
 
-    private static final String PLAYER_TABLE_CREATE = "CREATE TABLE " + PLAYER_TABLE_NAME + " (id integer PRIMARY KEY NOT NULL , role text);";
+    private static final String PLAYER_TABLE_CREATE = "CREATE TABLE " + PLAYER_TABLE_NAME +
+            " (id integer PRIMARY KEY NOT NULL , role text , name text , isPresident boolean , isChancellor boolean , isAlive boolean);";
 
     private static final String BOARD_TABLE_CREATE = "CREATE TABLE " + BOARD_TABLE_NAME + " (id integer PRIMARY KEY NOT NULL , fascistLawCount integer, liberalLawCount integer);";
 
@@ -91,6 +97,32 @@ public class DBHandler extends SQLiteOpenHelper {
         db.close();
         return count;
     }
+
+    private String GetStringItem(String tableName, String columnName, int rowNumber) {
+        db = this.getReadableDatabase();
+        Cursor cursor = db.query(tableName, new String[]{COLUMN_ID, columnName},COLUMN_ID + "=?", new String[]{String.valueOf(rowNumber)}, null, null, null, null);
+        String item = "";
+
+        if (cursor != null && cursor.moveToFirst()) {
+            item = cursor.getString(cursor.getColumnIndex(columnName));
+        }
+        cursor.close();
+        db.close();
+        return item;
+    }
+
+    private int GetIntItem(String tableName, String columnName, int rowNumber) {
+        db = this.getReadableDatabase();
+        Cursor cursor = db.query(tableName, new String[]{COLUMN_ID, columnName},COLUMN_ID + "=?", new String[]{String.valueOf(rowNumber)}, null, null, null, null);
+        int item = 0;
+
+        if (cursor != null && cursor.moveToFirst()) {
+            item = cursor.getInt(cursor.getColumnIndex(columnName));
+        }
+        cursor.close();
+        db.close();
+        return item;
+    }
     /**
      * End of General Database Methods
      */
@@ -107,23 +139,24 @@ public class DBHandler extends SQLiteOpenHelper {
         int rowCount = cursor.getCount();
 
         values.put(COLUMN_ID, rowCount);
-        values.put(COLUMN_ROLE, "role");
+        values.put(COLUMN_ROLE, newPlayer.role);
+        values.put(COLUMN_NAME, newPlayer.name);
+        values.put(COLUMN_IS_PRESIDENT, newPlayer.isPresident);
+        values.put(COLUMN_IS_CHANCELLOR, newPlayer.isChancellor);
+        values.put(COLUMN_IS_ALIVE, newPlayer.isAlive);
 
         db.insert(PLAYER_TABLE_NAME, null, values);
         cursor.close();
         db.close();
     }
 
-    public String GetRole(int id) {
-        db = this.getReadableDatabase();
-        Cursor cursor = db.query(PLAYER_TABLE_NAME, new String[]{COLUMN_ID, COLUMN_ROLE},COLUMN_ID + "=?", new String[]{String.valueOf(id)}, null, null, null, null);
-        String role = "No role";
+    public String GetName(int id) {
+        String name = GetStringItem(PLAYER_TABLE_NAME, COLUMN_NAME, id);
+        return name;
+    }
 
-        if (cursor != null && cursor.moveToFirst()) {
-            role = cursor.getString(cursor.getColumnIndex(COLUMN_ROLE));
-        }
-        cursor.close();
-        db.close();
+    public String GetRole(int id) {
+        String role = GetStringItem(PLAYER_TABLE_NAME, COLUMN_ROLE, id);
         return role;
     }
 
@@ -138,11 +171,83 @@ public class DBHandler extends SQLiteOpenHelper {
     }
 
     public int GetPlayerCount() {
-        db = this.getWritableDatabase();
-        long tempCount = DatabaseUtils.queryNumEntries(db, PLAYER_TABLE_NAME);
-        int count = (int) tempCount;
-        db.close();
+        int count = RowCount(PLAYER_TABLE_NAME);
         return count;
+    }
+
+    public int GetPresidentID() {
+        int presidentID = 0;
+        db = this.getReadableDatabase();
+        Cursor cursor = db.query(PLAYER_TABLE_NAME, new String[]{COLUMN_IS_PRESIDENT}, null, null, null, null, null);
+        ArrayList<Integer> presidencyStatuses = new ArrayList<>();
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                presidencyStatuses.add(cursor.getInt(cursor.getColumnIndex(COLUMN_IS_PRESIDENT)));
+            } while (cursor != null && cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+
+        if (!presidencyStatuses.isEmpty()) {
+            for (int i = 0; i < presidencyStatuses.size(); i++) {
+                if (presidencyStatuses.get(i) == 1) {
+                    presidentID = i;
+                    break;
+                }
+            }
+        }
+        return presidentID;
+    }
+
+    public String GetPresidentName() {
+        String presidentName = "";
+        db = this.getReadableDatabase();
+        Cursor cursor = db.query(PLAYER_TABLE_NAME, new String[]{COLUMN_NAME, COLUMN_IS_PRESIDENT}, null, null, null, null, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                int presidencyStatus = cursor.getInt(cursor.getColumnIndex(COLUMN_IS_PRESIDENT));
+                if (presidencyStatus == 1) {
+                    presidentName = cursor.getString(cursor.getColumnIndex(COLUMN_NAME));
+                    cursor.close();
+                    db.close();
+                    return presidentName;
+                }
+            } while (cursor != null && cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return presidentName;
+    }
+
+    public void SetAsPresident(int playerID) {
+        db = this.getWritableDatabase();
+        String idAsString = Integer.toString(playerID);
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(COLUMN_IS_PRESIDENT, true);
+        db.update(PLAYER_TABLE_NAME, contentValues, COLUMN_ID + "=?", new String[]{idAsString});
+        db.close();
+    }
+
+    public boolean PresidentExists() {
+        db = this.getReadableDatabase();
+        Cursor cursor = db.query(PLAYER_TABLE_NAME, new String[]{COLUMN_IS_PRESIDENT}, null, null, null, null, null);
+        int presidencyStatus;
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                presidencyStatus = cursor.getInt(cursor.getColumnIndex(COLUMN_IS_PRESIDENT));
+                if (presidencyStatus == 1) {
+                    cursor.close();
+                    db.close();
+                    return true;
+                }
+            } while (cursor != null && cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return false;
     }
     /**
      * End of Player_Table Methods
@@ -190,14 +295,7 @@ public class DBHandler extends SQLiteOpenHelper {
         if (lawType.equals("Fascist")) {
             columnName = COLUMN_FASCIST_LAW_COUNT;
         }
-        db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + columnName + " FROM " + BOARD_TABLE_NAME + " WHERE id = 0", null);
-        int lawCount = 0;
-        if (cursor.moveToFirst()) {
-            lawCount = cursor.getInt(cursor.getColumnIndex(columnName));
-        }
-        cursor.close();
-        db.close();
+        int lawCount = GetIntItem(BOARD_TABLE_NAME, columnName, 0);
         return lawCount;
     }
     /**

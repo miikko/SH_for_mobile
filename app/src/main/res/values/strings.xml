@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Secret_Hitler</string>
+    <string name="title_activity_chancellor_choosing">ChancellorChoosingActivity</string>
 </resources>

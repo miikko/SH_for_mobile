@@ -13,24 +13,29 @@ public class Player implements Parcelable{
     boolean isAlive;
     int parameters = 6;
 
-    public Player (){
-
-    }
-
-    public Player (int id) {
+    public Player (int id, String role, String name, boolean isPresident, boolean isChancellor, boolean isAlive){
         this.id = id;
+        this.role = role;
+        this.name = name;
+        this.isPresident = isPresident;
+        this.isChancellor = isChancellor;
+        this.isAlive = isAlive;
     }
 
-    public Player (String role) {
-        this.role = role;
+    public void SetID(int id) {
+        this.id = id;
     }
 
     public String GetRole() {
         return this.role;
     }
 
-    public void SetID(int id) {
-        this.id = id;
+    public void SetRole(String newRole) {
+        this.role = newRole;
+    }
+
+    public void SetAsPresident () {
+        this.isPresident = true;
     }
 
     public Player (Parcel in) {

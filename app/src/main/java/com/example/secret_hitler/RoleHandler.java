@@ -13,7 +13,7 @@ public class RoleHandler {
     Random rand;
 
 
-    public void AssignRole(Context appContext, int playerID) {
+    public void AssignRole(Context appContext, Player thisPlayer) {
         dbHandler = DBHandler.getInstance(appContext);
         int playerCount = dbHandler.GetPlayerCount();
         String role;
@@ -130,13 +130,14 @@ public class RoleHandler {
             role = "Hitler";
         }
 
-        dbHandler.SetRole(playerID, role);
+        dbHandler.SetRole(thisPlayer.id, role);
+        thisPlayer.SetRole(role);
     }
 
-    public void AssignPresidency(Context appContext) {
+    public void AssignFirstPresidency(Context appContext) {
         dbHandler = DBHandler.getInstance(appContext);
         int playerCount = dbHandler.GetPlayerCount();
-        int lotteryResult = rand.nextInt(playerCount);
-        //dbHandler.SetAsPresident(lotteryResult);
+        int firstPresidentID = 4;/*rand.nextInt(playerCount);*/
+        dbHandler.SetAsPresident(firstPresidentID);
     }
 }
