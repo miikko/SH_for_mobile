@@ -8,24 +8,11 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RoleHandler {
-
-    public DBHandler dbHandler;
-    Random rand;
+    Random rand = new Random();
 
 
-    public void AssignRole(Context appContext, Player thisPlayer) {
-        dbHandler = DBHandler.getInstance(appContext);
-        int playerCount = dbHandler.GetPlayerCount();
+    public String AssignRole(int playerCount, ArrayList<String> playerRoles) {
         String role;
-
-        List<String> playerRoles = new ArrayList<>();
-
-        for (int i = 1; i < playerCount; i++) {
-            String thisPlayerRole = dbHandler.GetRole(i);
-            if (thisPlayerRole != null) {
-                playerRoles.add(thisPlayerRole);
-            }
-        }
 
         int hitlerCount = 0;
         int fascistCount = 0;
@@ -124,20 +111,21 @@ public class RoleHandler {
             role = "Liberal";
         }
 
-        //If the game is ready to start and no Hitler has been chosen, this statement makes it so the last player is Hitler.
-        //Otherwise the game could start without a Hitler
-        if (canBeHitler && playerCount == 5) {
+        List<String> actualPlayerRoles = new ArrayList<>();
+        for (String item : playerRoles) {
+            if (!item.equals("unknown")) {
+                actualPlayerRoles.add(item);
+            }
+        }
+        if (actualPlayerRoles.size() == 4 && canBeHitler) {
             role = "Hitler";
         }
 
-        dbHandler.SetRole(thisPlayer.id, role);
-        thisPlayer.SetRole(role);
+        return role;
     }
 
-    public void AssignFirstPresidency(Context appContext) {
-        dbHandler = DBHandler.getInstance(appContext);
-        int playerCount = dbHandler.GetPlayerCount();
+    public int AssignFirstPresidency(int playerCount) {
         int firstPresidentID = 4;/*rand.nextInt(playerCount);*/
-        dbHandler.SetAsPresident(firstPresidentID);
+        return firstPresidentID;
     }
 }

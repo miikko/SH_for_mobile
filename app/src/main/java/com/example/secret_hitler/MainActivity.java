@@ -1,8 +1,10 @@
 package com.example.secret_hitler;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -10,11 +12,18 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 public class MainActivity extends AppCompatActivity {
 
-    public DBHandler dbHandler;
     private EditText nameEditText;
     private Button joinGameButton;
+    private DatabaseReference playersRef;
+    private int playerCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,17 +67,36 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        playersRef = FirebaseDatabase.getInstance().getReference("Players");
+        ValueEventListener playersEventListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                playerCount = (int) dataSnapshot.getChildrenCount();
+                DatabaseReference playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
+                playerCountRef.setValue(playerCount);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playersRef.addValueEventListener(playersEventListener);
+
         joinGameButton.setOnClickListener(new View.OnClickListener() {
 
             public void onClick (View view) {
-                dbHandler = DBHandler.getInstance(getApplicationContext());
+
+                //ADDING PLAYER TO THE DATABASE
+                int playerID = playerCount;
                 String playerName = nameEditText.getText().toString();
-                int playerId = dbHandler.GetPlayerCount();
-                Player newPlayer = new Player(playerId, "unknown", playerName, false, false, true);
-                dbHandler.addNewPlayer(newPlayer);
+                Player newPlayer = new Player(playerID, "unknown", playerName, false, false, true, false, "none");
+                playersRef.child("Player_" + playerID).setValue(newPlayer);
+                //PLAYER HAS BEEN ADDED TO THE DATABASE
 
                 Intent confirmRoleIntent = new Intent(getApplicationContext(), LobbyActivity.class);
                 confirmRoleIntent.putExtra("com.example.secret_hitler.PLAYER", newPlayer);
+                confirmRoleIntent.putExtra("com.example.secret_hitler.PLAYERCOUNT", playerCount);
                 startActivity(confirmRoleIntent);
             }
         });

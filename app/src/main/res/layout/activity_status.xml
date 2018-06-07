@@ -27,7 +27,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginTop="8dp"
         android:text="Leadership rank should display here"
-        app:layout_constraintBottom_toTopOf="@+id/chooseChancellorBtn"
+        app:layout_constraintBottom_toTopOf="@+id/yourVoteIsNeededTextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lawCountTextView" />
@@ -53,22 +53,22 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/statusRefreshBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Refresh"
-        app:layout_constraintBottom_toTopOf="@+id/clearLawsBtn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
         android:id="@+id/chooseChancellorBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:text="Choose the Chancellor"
-        app:layout_constraintBottom_toTopOf="@+id/statusRefreshBtn"
+        app:layout_constraintBottom_toTopOf="@+id/clearLawsBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/yourVoteIsNeededTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="This should inform the players if their vote is needed"
+        app:layout_constraintBottom_toTopOf="@+id/chooseChancellorBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,6 @@
 package com.example.secret_hitler;
 
+import android.content.Intent;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -11,19 +12,18 @@ public class Player implements Parcelable{
     boolean isPresident;
     boolean isChancellor;
     boolean isAlive;
-    int parameters = 6;
+    boolean hasVoted;
+    String previousVote;
 
-    public Player (int id, String role, String name, boolean isPresident, boolean isChancellor, boolean isAlive){
+    public Player (int id, String role, String name, boolean isPresident, boolean isChancellor, boolean isAlive, boolean hasVoted, String previousVote){
         this.id = id;
         this.role = role;
         this.name = name;
         this.isPresident = isPresident;
         this.isChancellor = isChancellor;
         this.isAlive = isAlive;
-    }
-
-    public void SetID(int id) {
-        this.id = id;
+        this.hasVoted = false;
+        this.previousVote = previousVote;
     }
 
     public String GetRole() {
@@ -34,13 +34,25 @@ public class Player implements Parcelable{
         this.role = newRole;
     }
 
-    public void SetAsPresident () {
+    public void SetAsPresident() {
         this.isPresident = true;
+    }
+
+    public void DidVote() {
+        this.hasVoted = true;
+    }
+
+    public void VotedNein() {
+        this.previousVote = "Nein";
+    }
+
+    public void VotedJa() {
+        this.previousVote = "Ja";
     }
 
     public Player (Parcel in) {
         //!!Change size when adding new parameters to Player class!!
-        String[] data = new String[parameters];
+        String[] data = new String[8];
 
         in.readStringArray(data);
         this.id = Integer.parseInt(data[0]);
@@ -49,6 +61,8 @@ public class Player implements Parcelable{
         this.isPresident = Boolean.valueOf(data[3]);
         this.isChancellor = Boolean.valueOf(data[4]);
         this.isAlive = Boolean.valueOf(data[5]);
+        this.hasVoted = Boolean.valueOf(data[6]);
+        this.previousVote = data[7];
     }
 
     @Override
@@ -58,7 +72,9 @@ public class Player implements Parcelable{
 
     @Override
     public void writeToParcel(Parcel destination, int flags) {
-        destination.writeStringArray(new String[]{String.valueOf(this.id), this.role, this.name, String.valueOf(this.isPresident), String.valueOf(this.isChancellor), String.valueOf(this.isAlive)});
+        destination.writeStringArray(new String[]
+                {String.valueOf(this.id), this.role, this.name, String.valueOf(this.isPresident),
+                        String.valueOf(this.isChancellor), String.valueOf(this.isAlive), String.valueOf(this.hasVoted), this.previousVote});
     }
 
     public static final Parcelable.Creator<Player> CREATOR = new Parcelable.Creator<Player>() {

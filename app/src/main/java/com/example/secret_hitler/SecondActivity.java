@@ -1,6 +1,7 @@
 package com.example.secret_hitler;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,44 +10,82 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 public class SecondActivity extends AppCompatActivity {
 
-    public DBHandler dbHandler;
     private Player thisPlayer;
     private String role;
-    private int playerCount;
+    private Button votingBtn;
+    private DatabaseReference voteNeededRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
 
-        dbHandler = DBHandler.getInstance(getApplicationContext());
-        Button votingBtn = findViewById(R.id.votingBtn);
+        votingBtn = findViewById(R.id.votingBtn);
+        votingBtn.setEnabled(false);
         Button showFactionBtn = findViewById(R.id.showFactionBtn);
         Button statusBtn = findViewById(R.id.statusBtn);
 
         ImageView roleImageView = findViewById(R.id.roleImageView);
         TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
 
-        if (dbHandler.RowCount("gameBoard") == 0) {
-            dbHandler.InitializeBoard();
-        }
-        role = "role";
-
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
             role = thisPlayer.role;
-
-            //Remove this after confirming that the role distribution works properly
-            Log.d("PLAYERROLE", role);
-            Log.d("PLAYERID", Integer.toString(thisPlayer.id));
-            playerCount = dbHandler.GetPlayerCount();
-            for (int i = 0; i < playerCount; i++) {
-                Log.d("ALLROLES","Player number " + (i + 1) + " role is " + dbHandler.GetRole(i));
-            }
-            //
         }
+
+        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
+        ValueEventListener voteNeededListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue(boolean.class)) {
+                    votingBtn.setEnabled(true);
+                } else {
+                    votingBtn.setEnabled(false);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        voteNeededRef.addListenerForSingleValueEvent(voteNeededListener);
+
+        DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("Players");
+        ValueEventListener playerParameterListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Iterable<DataSnapshot> players = dataSnapshot.getChildren();
+                boolean breakLoop = false;
+                for (DataSnapshot player : players) {
+                    Iterable<DataSnapshot> parameters = player.getChildren();
+                    for (DataSnapshot parameter : parameters) {
+                        if (parameter.getKey().equals("id") && parameter.getValue(int.class) == thisPlayer.id) {
+                            breakLoop = true;
+                        } else if (parameter.getKey().equals("isPresident") && parameter.getValue(boolean.class)) {
+                            thisPlayer.SetAsPresident();
+                        }
+                    }
+                    if (breakLoop) {
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playersRef.addValueEventListener(playerParameterListener);
 
         switch (role) {
             case "Fascist":
@@ -70,15 +109,16 @@ public class SecondActivity extends AppCompatActivity {
         }
         winConditionsTextView.setText(winConditions);
 
-        playerCount = dbHandler.GetPlayerCount();
-
-        votingBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent goToVoteIntent = new Intent(getApplicationContext(), VotingActivity.class);
-                startActivity(goToVoteIntent);
-            }
-        });
+        if (votingBtn.isEnabled()) {
+            votingBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent goToVoteIntent = new Intent(getApplicationContext(), VotingActivity.class);
+                    goToVoteIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                    startActivity(goToVoteIntent);
+                }
+            });
+        }
 
         showFactionBtn.setOnClickListener(new View.OnClickListener() {
             @Override
