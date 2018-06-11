@@ -29,7 +29,6 @@ public class SecondActivity extends AppCompatActivity {
         setContentView(R.layout.activity_second);
 
         votingBtn = findViewById(R.id.votingBtn);
-        votingBtn.setEnabled(false);
         Button showFactionBtn = findViewById(R.id.showFactionBtn);
         Button statusBtn = findViewById(R.id.statusBtn);
 
@@ -57,7 +56,7 @@ public class SecondActivity extends AppCompatActivity {
 
             }
         };
-        voteNeededRef.addListenerForSingleValueEvent(voteNeededListener);
+        voteNeededRef.addValueEventListener(voteNeededListener);
 
         DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("Players");
         ValueEventListener playerParameterListener = new ValueEventListener() {

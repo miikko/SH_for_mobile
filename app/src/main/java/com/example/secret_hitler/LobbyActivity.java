@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -20,7 +19,7 @@ import java.util.ArrayList;
 
 public class LobbyActivity extends AppCompatActivity {
 
-    private RoleHandler roleHandler;
+    private Helper helper;
     private Player thisPlayer;
     private int playerCount;
     private ArrayList<String> playerRoles;
@@ -35,7 +34,7 @@ public class LobbyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
 
-        roleHandler = new RoleHandler();
+        helper = new Helper();
         playerRoles = new ArrayList<>();
 
         startGameButton = findViewById(R.id.startGameBtn);
@@ -63,11 +62,11 @@ public class LobbyActivity extends AppCompatActivity {
                 }
                 playerCountTextView.setText("Number of players: " + playerCount);
                 if (playerCount < 5) {
-                    lobbyStatusTextView.setText("You don't have enough players to start the game.");
+                    lobbyStatusTextView.setText("You don't have enough player to start playing.");
                     startGameButton.setEnabled(false);
                 } else if (playerCount > 10) {
                     int numberOfExcessPlayers = playerCount - 10;
-                    lobbyStatusTextView.setText("You have too many players. You need to remove " + numberOfExcessPlayers + " players from the game to start.");
+                    lobbyStatusTextView.setText("You have too many players. You need to remove " + numberOfExcessPlayers + " player(s) from the game to start.");
                     startGameButton.setEnabled(false);
                 } else {
                     int fascistCount = 0;
@@ -100,7 +99,7 @@ public class LobbyActivity extends AppCompatActivity {
                         default:
                             break;
                     }
-                    lobbyStatusTextView.setText("There will be " + liberalCount + " liberals, " + fascistCount + " fascists and 1 Hitler in this game.");
+                    lobbyStatusTextView.setText("There will be " + liberalCount + " Liberals, " + fascistCount + " Fascist(s) and 1 Hitler in this game.");
                     startGameButton.setEnabled(true);
                 }
             }
@@ -145,6 +144,10 @@ public class LobbyActivity extends AppCompatActivity {
                 rootRef.child("PresidentID").setValue(null);
                 rootRef.child("LawCount").setValue(null);
                 rootRef.child("VoteNeeded").setValue(null);
+                rootRef.child("ChancellorCandidateName").setValue(null);
+                rootRef.child("RemainingLaws").setValue(null);
+                rootRef.child("LawsInAction").setValue(null);
+                rootRef.child("DiscardedLaws").setValue(null);
             }
         });
 
@@ -152,13 +155,13 @@ public class LobbyActivity extends AppCompatActivity {
             startGameButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String thisPlayerRole = roleHandler.AssignRole(playerCount, playerRoles);
+                    String thisPlayerRole = helper.AssignRole(playerCount, playerRoles);
                     thisPlayer.SetRole(thisPlayerRole);
                     DatabaseReference thisPlayerRoleRef = playersRef.child("Player_" + thisPlayer.id).child("role");
                     thisPlayerRoleRef.setValue(thisPlayerRole);
 
                     if (!presidentChosen) {
-                        int firstPresidentID = roleHandler.AssignFirstPresidency(playerCount);
+                        int firstPresidentID = helper.AssignFirstPresidency(playerCount);
                         DatabaseReference presidentStatusRef = playersRef.child("Player_" + firstPresidentID).child("isPresident");
                         presidentStatusRef.setValue(true);
                         FirebaseDatabase.getInstance().getReference("PresidentID").setValue(firstPresidentID);
@@ -169,10 +172,18 @@ public class LobbyActivity extends AppCompatActivity {
                     DatabaseReference voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
                     voteCountRef.child("Ja_Votes").setValue(0);
                     voteCountRef.child("Nein_Votes").setValue(0);
+                    DatabaseReference remainingLawsRef = FirebaseDatabase.getInstance().getReference("RemainingLaws");
+                    remainingLawsRef.child("Liberal").setValue(6);
+                    remainingLawsRef.child("Fascist").setValue(11);
+                    DatabaseReference discardedLawsRef = FirebaseDatabase.getInstance().getReference("DiscardedLaws");
+                    discardedLawsRef.child("Liberal").setValue(0);
+                    discardedLawsRef.child("Fascist").setValue(0);
+                    DatabaseReference activeLawsRef = FirebaseDatabase.getInstance().getReference("ActiveLaws");
+                    activeLawsRef.child("Liberal").setValue(0);
+                    activeLawsRef.child("Fascist").setValue(0);
 
                     Intent startGameIntent = new Intent(getApplicationContext(), SecondActivity.class);
                     startGameIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
-                    startGameIntent.putExtra("com.example.secret_hitler.PLAYERCOUNT", playerCount);
                     startActivity(startGameIntent);
                 }
             });

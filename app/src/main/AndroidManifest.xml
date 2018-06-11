@@ -23,7 +23,8 @@
         <activity android:name=".LobbyActivity" />
         <activity android:name=".StatusActivity" />
         <activity android:name=".ChooseChancellorActivity" />
-        <activity android:name=".PresidentVotingWaitingRoomActivity"></activity>
+        <activity android:name=".PresidentVotingWaitingRoomActivity" />
+        <activity android:name=".PresidentSelectLawsActivity"></activity>
     </application>
 
 </manifest>

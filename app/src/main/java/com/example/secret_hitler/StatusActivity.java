@@ -125,7 +125,7 @@ public class StatusActivity extends AppCompatActivity {
 
             }
         };
-        voteNeededRef.addListenerForSingleValueEvent(voteNeededListener);
+        voteNeededRef.addValueEventListener(voteNeededListener);
 
         selectLawsBtn.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -83,6 +83,7 @@ public class ChooseChancellorActivity extends AppCompatActivity {
                 voteNeeded.setValue(true);
                 Intent moveToPresidentWaitingRoomIntent = new Intent(getApplicationContext(), PresidentVotingWaitingRoomActivity.class);
                 moveToPresidentWaitingRoomIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                moveToPresidentWaitingRoomIntent.putExtra("com.example.secret_hitler.CHANCELLORCANDIDATENAME", selectedChancellorCandidate);
                 startActivity(moveToPresidentWaitingRoomIntent);
             }
         });

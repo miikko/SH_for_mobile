@@ -8,10 +8,15 @@
 
     <TextView
         android:id="@+id/votingStatusForPresidentTextView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="This should inform the president on how the voting is going."
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:gravity="center"
+        android:text="@string/presidentWaitingRoom_status"
         app:layout_constraintBottom_toTopOf="@+id/presidentAdvanceBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="Advance/Return"
+        android:text="@string/presidentWaitingRoom_advance_Btn"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -34,7 +39,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:text="JA"
+        android:text="@string/presidentWaitingRoom_ja_Btn"
         app:layout_constraintBottom_toTopOf="@+id/presidentAdvanceBtn"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -45,7 +50,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
-        android:text="NEIN"
+        android:text="@string/presidentWaitingRoom_nein_Btn"
         app:layout_constraintBottom_toTopOf="@+id/presidentAdvanceBtn"
         app:layout_constraintEnd_toEndOf="parent" />
 </android.support.constraint.ConstraintLayout>

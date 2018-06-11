@@ -1,4 +1,35 @@
 <resources>
     <string name="app_name">Secret_Hitler</string>
     <string name="title_activity_chancellor_choosing">ChancellorChoosingActivity</string>
+    <string name="first_ac_join_game_Btn">Join Game</string>
+    <string name="first_ac_name_type_hint">Type your name here</string>
+    <string name="lobby_start_playing_Btn">Start Playing!</string>
+    <string name="lobby_status">Lobby status message should display here</string>
+    <string name="lobby_player_count">PlayerCount should display here</string>
+    <string name="lobby_reset_Btn">Reset</string>
+    <string name="second_ac_win_conditions">Faction win conditions should appear here</string>
+    <string name="second_ac_vote_Btn">Vote</string>
+    <string name="second_ac_faction_Btn">Faction</string>
+    <string name="second_ac_display_role_Btn">displayRole</string>
+    <string name="second_ac_status_Btn">Status</string>
+    <string name="show_faction_faction_img_contentDescription">displayFaction</string>
+    <string name="status_lawCount">Number of liberal and fascist laws should display here</string>
+    <string name="status_leadershipRank">Leadership rank should display here</string>
+    <string name="status_addFascistLaw_Btn">Next</string>
+    <string name="status_clear_laws_Btn">Clear Laws</string>
+    <string name="status_choose_chancellor_Btn">Choose the Chancellor</string>
+    <string name="status_vote_needed">This should inform the players if their vote is needed</string>
+    <string name="choose_chancellor_hint">This should display tips on how to choose the next Chancellor</string>
+    <string name="choose_chancellor_lock_in_Btn">Lock In</string>
+    <string name="presidentWaitingRoom_status">This should inform the president on how the voting is going.</string>
+    <string name="presidentWaitingRoom_advance_Btn">Advance/Return</string>
+    <string name="presidentWaitingRoom_ja_Btn">JA</string>
+    <string name="presidentWaitingRoom_nein_Btn">NEIN</string>
+    <string name="voting_ja_Btn">JA!</string>
+    <string name="voting_nein_Btn">NEIN!</string>
+    <string name="voting_status">This should display information based on the current voting situation</string>
+    <string name="presSelectLaw_hint">This should tell the president what to do.</string>
+    <string name="presSelectLaw_third_imgBtn">presidentThirdLawImgBtn</string>
+    <string name="presSelectLaw_first_imgBtn">presidentFirstLawImgBtn</string>
+    <string name="presSelectLaw_second_imgBtn">presidentSecondLawImgBtn</string>
 </resources>

@@ -9,7 +9,7 @@
 
     <TextView
         android:id="@+id/winConditionsTextView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="16dp"
@@ -17,7 +17,8 @@
         android:layout_marginRight="16dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:text="Faction win conditions should appear here"
+        android:gravity="center"
+        android:text="@string/second_ac_win_conditions"
         app:layout_constraintBottom_toTopOf="@+id/statusBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,7 +31,7 @@
         android:layout_marginBottom="16dp"
         android:layout_marginLeft="16dp"
         android:layout_marginStart="16dp"
-        android:text="Vote"
+        android:text="@string/second_ac_vote_Btn"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -41,7 +42,7 @@
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginRight="16dp"
-        android:text="Faction"
+        android:text="@string/second_ac_faction_Btn"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -51,7 +52,7 @@
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
         android:layout_marginTop="16dp"
-        android:contentDescription="displayRole"
+        android:contentDescription="@string/second_ac_display_role_Btn"
         app:layout_constraintBottom_toTopOf="@+id/winConditionsTextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -67,7 +68,7 @@
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
-        android:text="Status"
+        android:text="@string/second_ac_status_Btn"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/showFactionBtn"
         app:layout_constraintStart_toEndOf="@+id/votingBtn" />

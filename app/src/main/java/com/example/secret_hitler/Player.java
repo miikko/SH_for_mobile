@@ -6,14 +6,14 @@ import android.os.Parcelable;
 
 public class Player implements Parcelable{
 
-    int id;
-    String role;
-    String name;
-    boolean isPresident;
-    boolean isChancellor;
-    boolean isAlive;
-    boolean hasVoted;
-    String previousVote;
+    public int id;
+    public String role;
+    public String name;
+    public boolean isPresident;
+    public boolean isChancellor;
+    public boolean isAlive;
+    public boolean hasVoted;
+    public String previousVote;
 
     public Player (int id, String role, String name, boolean isPresident, boolean isChancellor, boolean isAlive, boolean hasVoted, String previousVote){
         this.id = id;
