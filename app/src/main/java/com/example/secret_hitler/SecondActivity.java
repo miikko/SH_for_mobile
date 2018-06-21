@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,10 +19,26 @@ import com.google.firebase.database.ValueEventListener;
 
 public class SecondActivity extends AppCompatActivity {
 
+    private Button votingBtn;
+    private Button showFactionBtn;
+    private Button statusBtn;
+    private ImageView roleImageView;
+    private TextView winConditionsTextView;
+    private TextView waitForOthersTextView;
+    private DatabaseReference playerCountRef;
+    private DatabaseReference newActiveLawRef;
+    private DatabaseReference voteCountRef;
+    private DatabaseReference playersInThisRoundRef;
+    private DatabaseReference voteNeededRef;
+    private DatabaseReference playersRef;
+    private ValueEventListener playerCountListener;
+    private ValueEventListener playersInThisRoundListener;
+    private ValueEventListener voteNeededListener;
+    private ValueEventListener playerParameterListener;
     private Player thisPlayer;
     private String role;
-    private Button votingBtn;
-    private DatabaseReference voteNeededRef;
+    private int playerCount;
+    private int numOfPlayersInThisRound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,19 +46,62 @@ public class SecondActivity extends AppCompatActivity {
         setContentView(R.layout.activity_second);
 
         votingBtn = findViewById(R.id.votingBtn);
-        Button showFactionBtn = findViewById(R.id.showFactionBtn);
-        Button statusBtn = findViewById(R.id.statusBtn);
-
-        ImageView roleImageView = findViewById(R.id.roleImageView);
-        TextView winConditionsTextView = findViewById(R.id.winConditionsTextView);
+        showFactionBtn = findViewById(R.id.showFactionBtn);
+        statusBtn = findViewById(R.id.statusBtn);
+        roleImageView = findViewById(R.id.roleImageView);
+        winConditionsTextView = findViewById(R.id.winConditionsTextView);
+        waitForOthersTextView = findViewById(R.id.waitForOthersTextView);
+        waitForOthersTextView.setText("Waiting for other players...");
+        playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
+        newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
+        voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
+        playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
+        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
+        playersRef = FirebaseDatabase.getInstance().getReference("Players");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
             role = thisPlayer.role;
         }
 
-        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-        ValueEventListener voteNeededListener = new ValueEventListener() {
+        playerCountListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                playerCount = dataSnapshot.getValue(int.class);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playerCountRef.addValueEventListener(playerCountListener);
+
+        playersInThisRoundListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                numOfPlayersInThisRound = dataSnapshot.getValue(int.class);
+                if (numOfPlayersInThisRound < 1/*playerCount*/) {
+                    showFactionBtn.setEnabled(false);
+                    statusBtn.setEnabled(false);
+                } else {
+                    newActiveLawRef.setValue("None");
+                    voteCountRef.child("Ja_Votes").setValue(0);
+                    voteCountRef.child("Nein_Votes").setValue(0);
+                    waitForOthersTextView.setVisibility(View.INVISIBLE);
+                    showFactionBtn.setEnabled(true);
+                    statusBtn.setEnabled(true);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
+
+        voteNeededListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getValue(boolean.class)) {
@@ -58,8 +118,7 @@ public class SecondActivity extends AppCompatActivity {
         };
         voteNeededRef.addValueEventListener(voteNeededListener);
 
-        DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        ValueEventListener playerParameterListener = new ValueEventListener() {
+        playerParameterListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Iterable<DataSnapshot> players = dataSnapshot.getChildren();
@@ -102,22 +161,21 @@ public class SecondActivity extends AppCompatActivity {
         String newline = System.getProperty("line.separator");
         String winConditions = "Your win conditions are:" + newline;
         if (role.equals("Liberal")) {
-            winConditions += "- Enact 5 Liberal policies" + newline + "- Kill Hitler";
+            winConditions += "- Enact 5 Liberal Laws" + newline + "- Kill Hitler";
         } else {
-            winConditions += "- Enact 6 Fascist policies" + newline + "- Appoint Hitler as Chancellor after passing 3 Fascist policies";
+            winConditions += "- Enact 6 Fascist Laws" + newline + "- Appoint Hitler as Chancellor after passing 3 Fascist Laws";
         }
         winConditionsTextView.setText(winConditions);
 
-        if (votingBtn.isEnabled()) {
-            votingBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent goToVoteIntent = new Intent(getApplicationContext(), VotingActivity.class);
-                    goToVoteIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
-                    startActivity(goToVoteIntent);
-                }
-            });
-        }
+        votingBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent goToVoteIntent = new Intent(getApplicationContext(), VotingActivity.class);
+                goToVoteIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                startActivity(goToVoteIntent);
+            }
+        });
+
 
         showFactionBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -150,4 +208,14 @@ public class SecondActivity extends AppCompatActivity {
 
     }
     */
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        playerCountRef.removeEventListener(playerCountListener);
+        playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
+        voteNeededRef.removeEventListener(voteNeededListener);
+        playersRef.removeEventListener(playerParameterListener);
+    }
+
 }

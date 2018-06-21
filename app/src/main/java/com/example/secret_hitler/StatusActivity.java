@@ -3,6 +3,7 @@ package com.example.secret_hitler;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -10,6 +11,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -26,11 +28,17 @@ public class StatusActivity extends AppCompatActivity {
     private Button chooseChancellorBtn;
     private Player thisPlayer;
     private String presidentName;
-    private DatabaseReference lawCountRef;
+    private DatabaseReference gameBoardRef;
     private DatabaseReference playersRef;
     private DatabaseReference voteNeededRef;
+    private DatabaseReference previousChancellorNameRef;
+    private ValueEventListener activeLawCountListener;
+    private ValueEventListener playerParameterListener;
+    private ValueEventListener voteNeededListener;
+    private ValueEventListener previousChancellorNameListener;
     private int fascistLawCount;
     private int liberalLawCount;
+    private String previousChancellorName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,24 +53,31 @@ public class StatusActivity extends AppCompatActivity {
         clearLawsBtn = findViewById(R.id.clearLawsBtn);
         chooseChancellorBtn = findViewById(R.id.chooseChancellorBtn);
         chooseChancellorBtn.setVisibility(View.INVISIBLE);
+        previousChancellorName = "none";
+        gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
+        playersRef = FirebaseDatabase.getInstance().getReference("Players");
+        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
+        previousChancellorNameRef = FirebaseDatabase.getInstance().getReference("PreviousChancellorName");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
 
-        lawCountRef = FirebaseDatabase.getInstance().getReference("LawCount");
-        ValueEventListener lawCountListener = new ValueEventListener() {
+        activeLawCountListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Iterable<DataSnapshot> bothLawCounts = dataSnapshot.getChildren();
-                for (DataSnapshot eachLawCount : bothLawCounts) {
-                    if (eachLawCount.getKey().equals("Liberal")) {
-                        liberalLawCount = eachLawCount.getValue(int.class);
-                    } else {
-                        fascistLawCount = eachLawCount.getValue(int.class);
+                Log.d("children", dataSnapshot.getChildrenCount() + "");
+                if (dataSnapshot.exists()) {
+                    Iterable<DataSnapshot> bothActiveLawCounts = dataSnapshot.getChildren();
+                    for (DataSnapshot eachActiveLawCount : bothActiveLawCounts) {
+                        if (eachActiveLawCount.getKey().equals("Liberal")) {
+                            liberalLawCount = eachActiveLawCount.getValue(int.class);
+                        } else {
+                            fascistLawCount = eachActiveLawCount.getValue(int.class);
+                        }
                     }
+                    lawCountTextView.setText("There are " + fascistLawCount + " active Fascist laws and " + liberalLawCount + " active Liberal laws.");
                 }
-                lawCountTextView.setText("There are " + fascistLawCount + " Fascist laws and " + liberalLawCount + " Liberal laws.");
             }
 
             @Override
@@ -70,10 +85,9 @@ public class StatusActivity extends AppCompatActivity {
 
             }
         };
-        lawCountRef.addValueEventListener(lawCountListener);
+        gameBoardRef.child("Active_Laws").addListenerForSingleValueEvent(activeLawCountListener);
 
-        playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        ValueEventListener playerParameterListener = new ValueEventListener() {
+        playerParameterListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 boolean stopLoop = false;
@@ -91,7 +105,8 @@ public class StatusActivity extends AppCompatActivity {
                         break;
                     }
                 }
-                if (thisPlayer.isPresident) {
+                if (thisPlayer.name.equals(presidentName)) {
+                    thisPlayer.SetAsPresident();
                     leaderTextView.setText("You are the President.");
                     chooseChancellorBtn.setVisibility(View.VISIBLE);
                 } else if (thisPlayer.isChancellor) {
@@ -108,8 +123,7 @@ public class StatusActivity extends AppCompatActivity {
         };
         playersRef.addValueEventListener(playerParameterListener);
 
-        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-        ValueEventListener voteNeededListener = new ValueEventListener() {
+        voteNeededListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getValue(boolean.class)) {
@@ -127,29 +141,41 @@ public class StatusActivity extends AppCompatActivity {
         };
         voteNeededRef.addValueEventListener(voteNeededListener);
 
-        selectLawsBtn.setOnClickListener(new View.OnClickListener() {
+        previousChancellorNameListener = new ValueEventListener() {
             @Override
-            public void onClick(View v) {
-                lawCountRef.child("Fascist").setValue(fascistLawCount + 1);
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    previousChancellorName = dataSnapshot.getValue().toString();
+                }
             }
-        });
 
-        clearLawsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                lawCountRef.child("Liberal").setValue(0);
-                lawCountRef.child("Fascist").setValue(0);
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
-        });
+        };
+        previousChancellorNameRef.addListenerForSingleValueEvent(previousChancellorNameListener);
 
         chooseChancellorBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent chooseChancellorIntent = new Intent(getApplicationContext(), ChooseChancellorActivity.class);
                 chooseChancellorIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                if (!previousChancellorName.equals("none")) {
+                    chooseChancellorIntent.putExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME", previousChancellorName);
+                }
                 startActivity(chooseChancellorIntent);
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        gameBoardRef.child("Active_Laws").removeEventListener(activeLawCountListener);
+        playersRef.removeEventListener(playerParameterListener);
+        voteNeededRef.removeEventListener(voteNeededListener);
+        previousChancellorNameRef.removeEventListener(previousChancellorNameListener);
     }
 
 }

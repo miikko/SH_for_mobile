@@ -38,6 +38,18 @@ public class Player implements Parcelable{
         this.isPresident = true;
     }
 
+    public void RemovePresidency() {
+        this.isPresident = false;
+    }
+
+    public void SetAsChancellor() {
+        this.isChancellor = true;
+    }
+
+    public void RemoveChancellorStatus() {
+        this.isChancellor = false;
+    }
+
     public void DidVote() {
         this.hasVoted = true;
     }

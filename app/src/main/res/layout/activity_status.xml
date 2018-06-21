@@ -64,9 +64,10 @@
 
     <TextView
         android:id="@+id/yourVoteIsNeededTextView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
+        android:gravity="center"
         android:text="@string/status_vote_needed"
         app:layout_constraintBottom_toTopOf="@+id/chooseChancellorBtn"
         app:layout_constraintEnd_toEndOf="parent"

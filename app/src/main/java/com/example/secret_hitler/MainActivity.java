@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText nameEditText;
     private Button joinGameButton;
     private DatabaseReference playersRef;
+    private ValueEventListener playersEventListener;
     private int playerCount;
 
     @Override
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         nameEditText.setCursorVisible(false);
         joinGameButton = findViewById(R.id.joinGameBtn);
         joinGameButton.setEnabled(false);
+        playersRef = FirebaseDatabase.getInstance().getReference("Players");
 
         nameEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
 
@@ -67,8 +69,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        ValueEventListener playersEventListener = new ValueEventListener() {
+        playersEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 playerCount = (int) dataSnapshot.getChildrenCount();
@@ -101,5 +102,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        playersRef.removeEventListener(playersEventListener);
     }
 }

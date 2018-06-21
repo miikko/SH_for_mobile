@@ -20,13 +20,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChooseChancellorActivity extends AppCompatActivity {
-    public DBHandler dbHandler;
+
     private TextView chooseChancellorTextView;
     private Spinner chancellorCandidateSpinner;
     private Button lockChancellorCandidateBtn;
+    private DatabaseReference playerRef;
+    private DatabaseReference chancellorCandidateNameRef;
+    private ValueEventListener playerNameListener;
     private Player thisPlayer;
     private List<String> playerNames;
     private ArrayAdapter<String> spinnerAdapter;
+    private String previousChancellorName;
 
 
     @Override
@@ -34,17 +38,23 @@ public class ChooseChancellorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_choose_chancellor);
 
-        dbHandler = DBHandler.getInstance(getApplicationContext());
         chooseChancellorTextView = findViewById(R.id.chooseChancellorTextView);
+        chooseChancellorTextView.setText("Choose the Player that you want to be your Chancellor in this round from the Dropdown List.");
         chancellorCandidateSpinner = findViewById(R.id.chancellorCandidateSpinner);
         lockChancellorCandidateBtn = findViewById(R.id.lockChancellorCandidateBtn);
+        playerRef = FirebaseDatabase.getInstance().getReference("Players");
+        chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
+        if (getIntent().hasExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME")) {
+            previousChancellorName = getIntent().getStringExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME");
+        } else {
+            previousChancellorName = "none";
+        }
 
-        DatabaseReference playerParameterRef = FirebaseDatabase.getInstance().getReference("Players");
-        ValueEventListener playerNameListener = new ValueEventListener() {
+        playerNameListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 playerNames = new ArrayList<>();
@@ -58,8 +68,11 @@ public class ChooseChancellorActivity extends AppCompatActivity {
                     }
                 }
                 playerNames.remove(thisPlayer.name);
+                if (!previousChancellorName.equals("none")) {
+                    playerNames.remove(previousChancellorName);
+                }
                 if (spinnerAdapter == null) {
-                    spinnerAdapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_spinner_dropdown_item, playerNames);
+                    spinnerAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.my_spinner_text, R.id.textView, playerNames);
                     chancellorCandidateSpinner.setAdapter(spinnerAdapter);
                 }
             }
@@ -69,15 +82,12 @@ public class ChooseChancellorActivity extends AppCompatActivity {
 
             }
         };
-        playerParameterRef.addListenerForSingleValueEvent(playerNameListener);
-
-        chooseChancellorTextView.setText("Choose the Player that you want to be your Chancellor in this round from the Dropdown List.");
+        playerRef.addListenerForSingleValueEvent(playerNameListener);
 
         lockChancellorCandidateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String selectedChancellorCandidate = chancellorCandidateSpinner.getSelectedItem().toString();
-                DatabaseReference chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
                 chancellorCandidateNameRef.setValue(selectedChancellorCandidate);
                 DatabaseReference voteNeeded = FirebaseDatabase.getInstance().getReference("VoteNeeded");
                 voteNeeded.setValue(true);
@@ -88,4 +98,11 @@ public class ChooseChancellorActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        playerRef.removeEventListener(playerNameListener);
+    }
+
 }

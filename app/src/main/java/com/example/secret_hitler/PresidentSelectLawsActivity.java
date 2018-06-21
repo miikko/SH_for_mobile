@@ -1,5 +1,6 @@
 package com.example.secret_hitler;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -23,20 +24,22 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
     private ImageButton presidentFirstImgBtn;
     private ImageButton presidentSecondImgBtn;
     private ImageButton presidentThirdImgBtn;
-    private DatabaseReference remainingLawsRef;
-    private DatabaseReference discardedLawsRef;
+    private DatabaseReference gameBoardRef;
+    private DatabaseReference chancellorNeededRef;
+    private DatabaseReference chancellorsOptionsRef;
+    private ValueEventListener drawPileListener;
+    private Player thisPlayer;
     private Helper helper;
     private int liberalLawImg;
     private int fascistLawImg;
-    private int remainingLiberalLaws;
-    private int remainingFascistLaws;
-    private int discardedLiberalLaws;
-    private int discardedFascistLaws;
     private int liberalLawsActive;
     private int fascistLawsActive;
     private boolean firstBtnImgSet;
     private boolean secondBtnImgSet;
     private boolean thirdBtnImgSet;
+    private boolean firstBtnIsLiberal;
+    private boolean secondBtnIsLiberal;
+    private boolean thirdBtnIsLiberal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,18 +47,22 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_president_select_laws);
 
         presidentChooseLawsTextView = findViewById(R.id.presidentChooseLawsTextView);
-        presidentChooseLawsTextView.setText("Press the law that you want to discard. The other 2 will be sent to the Chancellor.");
+        presidentChooseLawsTextView.setText("Press the Law that you want to discard. The other 2 will be sent to the Chancellor.");
         presidentFirstImgBtn = findViewById(R.id.presidentFirstLawImgBtn);
         presidentSecondImgBtn = findViewById(R.id.presidentSecondLawImgBtn);
         presidentThirdImgBtn = findViewById(R.id.presidentThirdLawImgBtn);
         liberalLawImg = R.drawable.liberal_law;
         fascistLawImg = R.drawable.fascist_law;
-        remainingLawsRef = FirebaseDatabase.getInstance().getReference("RemainingLaws");
-        discardedLawsRef = FirebaseDatabase.getInstance().getReference("DiscardedLaws");
+        gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
+        chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
+        chancellorsOptionsRef = FirebaseDatabase.getInstance().getReference("ChancellorsOptions");
         helper = new Helper();
         firstBtnImgSet = false;
         secondBtnImgSet = false;
         thirdBtnImgSet = false;
+        firstBtnIsLiberal = true;
+        secondBtnIsLiberal = true;
+        thirdBtnIsLiberal = true;
 
         if (getIntent().hasExtra("com.example.secret_hitler.ACTIVELIBERALLAWS")) {
             liberalLawsActive = getIntent().getIntExtra("com.example.secret_hitler.ACTIVELIBERALLAWS", liberalLawsActive);
@@ -63,139 +70,49 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
         if (getIntent().hasExtra("com.example.secret_hitler.ACTIVEFASCISTLAWS")) {
             fascistLawsActive = getIntent().getIntExtra("com.example.secret_hitler.ACTIVEFASCISTLAWS", fascistLawsActive);
         }
+        if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
+            thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
+        }
 
-        ValueEventListener discardedLawCountListener = new ValueEventListener() {
+        drawPileListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Iterable<DataSnapshot> bothDiscardedLawCounts = dataSnapshot.getChildren();
-                for (DataSnapshot eachDiscardedLawCount : bothDiscardedLawCounts) {
-                    if (eachDiscardedLawCount.getKey().equals("Liberal")) {
-                        discardedLiberalLaws = eachDiscardedLawCount.getValue(int.class);
-                    } else {
-                        discardedFascistLaws = eachDiscardedLawCount.getValue(int.class);
-                    }
-                }
-            }
+                List<String> drawPile = (List<String>) dataSnapshot.getValue();
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        discardedLawsRef.addValueEventListener(discardedLawCountListener);
-
-        ValueEventListener remainingLawCountListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Iterable<DataSnapshot> bothLawCounts = dataSnapshot.getChildren();
-                for (DataSnapshot eachLawCount : bothLawCounts) {
-                    if (eachLawCount.getKey().equals("Liberal")) {
-                        remainingLiberalLaws = eachLawCount.getValue(int.class);
-                    } else {
-                        remainingFascistLaws = eachLawCount.getValue(int.class);
-                    }
-                }
                 if (!thirdBtnImgSet) {
-                    if (remainingLiberalLaws + remainingFascistLaws == 0) {
-                        //Shuffles the discard pile back to the remaining laws pile
-                        //Then calls this method again.
-                        remainingLawsRef.child("Liberal").setValue(discardedLiberalLaws - liberalLawsActive);
-                        discardedLawsRef.child("Liberal").setValue(0);
-                        remainingLawsRef.child("Fascist").setValue(discardedFascistLaws - fascistLawsActive);
-                        discardedLawsRef.child("Fascist").setValue(0);
-                    } else if (remainingLiberalLaws + remainingFascistLaws == 1) {
-                        int thisLawImg;
-                        if (remainingLiberalLaws == 1) {
-                            thisLawImg = liberalLawImg;
-                        } else {
-                            thisLawImg = fascistLawImg;
-                        }
-                        if (!firstBtnImgSet) {
-                            presidentFirstImgBtn.setImageResource(thisLawImg);
-                            firstBtnImgSet = true;
-                        } else if (!secondBtnImgSet) {
-                            presidentSecondImgBtn.setImageResource(thisLawImg);
-                            secondBtnImgSet = true;
-                        } else {
-                            presidentThirdImgBtn.setImageResource(thisLawImg);
-                            thirdBtnImgSet = true;
-                        }
-                        remainingLawsRef.child("Liberal").setValue(discardedLiberalLaws - liberalLawsActive);
-                        discardedLawsRef.child("Liberal").setValue(0);
-                        remainingLawsRef.child("Fascist").setValue(discardedFascistLaws - fascistLawsActive);
-                        discardedLawsRef.child("Fascist").setValue(0);
-                        firstBtnImgSet = true;
-                    } else if (remainingLiberalLaws + remainingFascistLaws == 2) {
-                        int firstLawImg;
-                        int secondLawImg;
-                        boolean liberalLawFirst = helper.rand.nextBoolean();
-                        if (remainingLiberalLaws == 2) {
-                            firstLawImg = liberalLawImg;
-                            secondLawImg = liberalLawImg;
-                        } else if (remainingFascistLaws == 2) {
-                            firstLawImg = fascistLawImg;
-                            secondLawImg = fascistLawImg;
-                        } else {
-                            if (liberalLawFirst) {
-                                firstLawImg = liberalLawImg;
-                                secondLawImg = fascistLawImg;
-                            } else {
-                                firstLawImg = fascistLawImg;
-                                secondLawImg = liberalLawImg;
-                            }
-                        }
-                        if (!firstBtnImgSet) {
-                            presidentFirstImgBtn.setImageResource(firstLawImg);
-                            presidentSecondImgBtn.setImageResource(secondLawImg);
-                            firstBtnImgSet = true;
-                            secondBtnImgSet = true;
-                            remainingLawsRef.child("Liberal").setValue(discardedLiberalLaws - liberalLawsActive);
-                            discardedLawsRef.child("Liberal").setValue(0);
-                            remainingLawsRef.child("Fascist").setValue(discardedFascistLaws - fascistLawsActive);
-                            discardedLawsRef.child("Fascist").setValue(0);
-                        } else if (!secondBtnImgSet) {
-                            presidentSecondImgBtn.setImageResource(firstLawImg);
-                            presidentThirdImgBtn.setImageResource(secondLawImg);
-                            secondBtnImgSet = true;
-                            thirdBtnImgSet = true;
-                            remainingLawsRef.child("Liberal").setValue(discardedLiberalLaws - liberalLawsActive);
-                            discardedLawsRef.child("Liberal").setValue(0);
-                            remainingLawsRef.child("Fascist").setValue(discardedFascistLaws - fascistLawsActive);
-                            discardedLawsRef.child("Fascist").setValue(0);
-                        } else {
-                            presidentThirdImgBtn.setImageResource(firstLawImg);
-                            thirdBtnImgSet = true;
-                            if (liberalLawFirst) {
-                                remainingLawsRef.child("Liberal").setValue(remainingLiberalLaws - 1);
-                            } else {
-                                remainingLawsRef.child("Fascist").setValue(remainingFascistLaws - 1);
-                            }
-                        }
+                    //If there are no laws in the draw pile, the discard pile will be shuffled to the draw pile
+                    if (drawPile.isEmpty()) {
+                        drawPile = helper.ShuffleLawsToDrawPile(6 - liberalLawsActive, 11 - fascistLawsActive);
                     } else {
-                        List<String> drawnLaws = helper.DrawLaws(1, remainingLiberalLaws, remainingFascistLaws);
-
-                        int thisLawImg;
-                        if (drawnLaws.get(0).equals("Liberal")) {
-                            thisLawImg = liberalLawImg;
-                        } else {
-                            thisLawImg = fascistLawImg;
-                        }
+                        String thisLawString = drawPile.get(0);
                         if (!firstBtnImgSet) {
-                            presidentFirstImgBtn.setImageResource(thisLawImg);
+                            if (thisLawString.equals("Liberal")) {
+                                presidentFirstImgBtn.setImageResource(liberalLawImg);
+                            } else {
+                                presidentFirstImgBtn.setImageResource(fascistLawImg);
+                                firstBtnIsLiberal = false;
+                            }
                             firstBtnImgSet = true;
                         } else if (!secondBtnImgSet) {
-                            presidentSecondImgBtn.setImageResource(thisLawImg);
+                            if (thisLawString.equals("Liberal")) {
+                                presidentSecondImgBtn.setImageResource(liberalLawImg);
+                            } else {
+                                presidentSecondImgBtn.setImageResource(fascistLawImg);
+                                secondBtnIsLiberal = false;
+                            }
                             secondBtnImgSet = true;
                         } else {
-                            presidentThirdImgBtn.setImageResource(thisLawImg);
+                            if (thisLawString.equals("Liberal")) {
+                                presidentThirdImgBtn.setImageResource(liberalLawImg);
+                            } else {
+                                presidentThirdImgBtn.setImageResource(fascistLawImg);
+                                thirdBtnIsLiberal = false;
+                            }
                             thirdBtnImgSet = true;
                         }
-                        if (thisLawImg == liberalLawImg) {
-                            remainingLawsRef.child("Liberal").setValue(remainingLiberalLaws - 1);
-                        } else {
-                            remainingLawsRef.child("Fascist").setValue(remainingFascistLaws - 1);
-                        }
+                        drawPile.remove(0);
                     }
+                    gameBoardRef.child("Draw_Pile").setValue(drawPile);
                 }
             }
 
@@ -204,13 +121,73 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
 
             }
         };
-        remainingLawsRef.addValueEventListener(remainingLawCountListener);
+        gameBoardRef.child("Draw_Pile").addValueEventListener(drawPileListener);
 
         presidentFirstImgBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                presidentSecondImgBtn.setImageResource(fascistLawImg);
+                if (secondBtnIsLiberal && thirdBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(2);
+                    chancellorsOptionsRef.child("Fascist").setValue(0);
+                } else if (!secondBtnIsLiberal && !thirdBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(0);
+                    chancellorsOptionsRef.child("Fascist").setValue(2);
+                } else {
+                    chancellorsOptionsRef.child("Liberal").setValue(1);
+                    chancellorsOptionsRef.child("Fascist").setValue(1);
+                }
+                chancellorNeededRef.setValue(true);
+                Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
+                goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                startActivity(goToLawUnveilingActivity);
+            }
+        });
+
+        presidentSecondImgBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (firstBtnIsLiberal && thirdBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(2);
+                    chancellorsOptionsRef.child("Fascist").setValue(0);
+                } else if (!firstBtnIsLiberal && !thirdBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(0);
+                    chancellorsOptionsRef.child("Fascist").setValue(2);
+                } else {
+                    chancellorsOptionsRef.child("Liberal").setValue(1);
+                    chancellorsOptionsRef.child("Fascist").setValue(1);
+                }
+                chancellorNeededRef.setValue(true);
+                Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
+                goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                startActivity(goToLawUnveilingActivity);
+            }
+        });
+
+        presidentThirdImgBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (firstBtnIsLiberal && secondBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(2);
+                    chancellorsOptionsRef.child("Fascist").setValue(0);
+                } else if (!firstBtnIsLiberal && !secondBtnIsLiberal) {
+                    chancellorsOptionsRef.child("Liberal").setValue(0);
+                    chancellorsOptionsRef.child("Fascist").setValue(2);
+                } else {
+                    chancellorsOptionsRef.child("Liberal").setValue(1);
+                    chancellorsOptionsRef.child("Fascist").setValue(1);
+                }
+                chancellorNeededRef.setValue(true);
+                Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
+                goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                startActivity(goToLawUnveilingActivity);
             }
         });
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        gameBoardRef.child("Draw_Pile").removeEventListener(drawPileListener);
+    }
+
 }

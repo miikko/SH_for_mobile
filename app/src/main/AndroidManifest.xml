@@ -24,7 +24,9 @@
         <activity android:name=".StatusActivity" />
         <activity android:name=".ChooseChancellorActivity" />
         <activity android:name=".PresidentVotingWaitingRoomActivity" />
-        <activity android:name=".PresidentSelectLawsActivity"></activity>
+        <activity android:name=".PresidentSelectLawsActivity" />
+        <activity android:name=".LawUnveilingActivity" />
+        <activity android:name=".ChancellorPickLawActivity" />
     </application>
 
 </manifest>

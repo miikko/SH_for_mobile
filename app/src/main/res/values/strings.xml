@@ -32,4 +32,13 @@
     <string name="presSelectLaw_third_imgBtn">presidentThirdLawImgBtn</string>
     <string name="presSelectLaw_first_imgBtn">presidentFirstLawImgBtn</string>
     <string name="presSelectLaw_second_imgBtn">presidentSecondLawImgBtn</string>
+    <string name="voting_advance_Btn">Advance</string>
+    <string name="lawUnveiling_hint">This should display hints to the players</string>
+    <string name="lawUnveiling_return_Btn">Return</string>
+    <string name="lawUnveiling_wait_for_law">This should tell the players to wait for the law to appear</string>
+    <string name="lawUnveiling_unveiled_law_Img">unveiledLaw</string>
+    <string name="chancellorLaw_hint">This should inform the chancellor on the current situation</string>
+    <string name="chancellorLaw_first_imgBtn">chancellorFirstLaw</string>
+    <string name="chancellorLaw_second_imgBtn">chancellorSecondLaw</string>
+    <string name="second_ac_wait_for_others">This should tell the players to wait for the other players.</string>
 </resources>

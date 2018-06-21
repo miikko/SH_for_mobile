@@ -137,8 +137,8 @@ public class Helper {
         List<String> drawnLaws = new ArrayList<>();
         for (int i = 0; i < howMany; i++) {
             int totalNumberOfLawsRemaining = tempLiberalLawsRemaining + tempFascistLawsRemaining;
-            int selectedLawID = rand.nextInt(totalNumberOfLawsRemaining) + 1;
-            if (selectedLawID <= tempLiberalLawsRemaining) {
+            int selectedLawNumber = rand.nextInt(totalNumberOfLawsRemaining);
+            if (selectedLawNumber < tempLiberalLawsRemaining) {
                 drawnLaws.add("Liberal");
                 tempLiberalLawsRemaining--;
             } else {
@@ -147,5 +147,23 @@ public class Helper {
             }
         }
         return drawnLaws;
+    }
+
+    public List<String> ShuffleLawsToDrawPile(int liberalLawsToBeShuffled, int fascistLawsToBeShuffled) {
+        List<String> lawDeck = new ArrayList<>();
+        int tempLiberalLaws = liberalLawsToBeShuffled;
+        int tempFascistLaws = fascistLawsToBeShuffled;
+        int totalNumberOfLawsToBeShuffled = tempLiberalLaws + tempFascistLaws;
+        for (int i = 0; i < totalNumberOfLawsToBeShuffled; i++) {
+            int thisLawOrderNumber = rand.nextInt((tempLiberalLaws + tempFascistLaws));
+            if (thisLawOrderNumber < tempLiberalLaws) {
+                lawDeck.add("Liberal");
+                tempLiberalLaws--;
+            } else {
+                lawDeck.add("Fascist");
+                tempFascistLaws--;
+            }
+        }
+        return lawDeck;
     }
 }
