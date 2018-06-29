@@ -16,6 +16,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class LawUnveilingActivity extends AppCompatActivity {
@@ -23,31 +25,33 @@ public class LawUnveilingActivity extends AppCompatActivity {
     private TextView waitForLawToAppearTextView;
     private ImageView unveiledLawImageView;
     private Button lawUnveilingReturnButton;
+    private DatabaseReference previousGovernmentRef;
+    private DatabaseReference nextPresidentIDRef;
     private DatabaseReference playerCountRef;
     private DatabaseReference gameBoardRef;
     private DatabaseReference newActiveLawRef;
     private DatabaseReference winnerFactionRef;
-    private DatabaseReference presidentIDRef;
     private DatabaseReference playersInThisRoundRef;
     private DatabaseReference playersRef;
-    private DatabaseReference previousChancellorNameRef;
+    private DatabaseReference roundsWithoutChancellorRef;
+    private DatabaseReference gameEndedRef;
+    private ValueEventListener nextPresidentIDListener;
     private ValueEventListener activeLawsListener;
-    private ValueEventListener drawPileListener;
     private ValueEventListener playerCountListener;
     private ValueEventListener newActiveLawListener;
-    private ValueEventListener presidentIDListener;
+    private ValueEventListener playerParameterListener;
     private ValueEventListener playersInThisRoundListener;
     private Player thisPlayer;
-    private Helper helper;
-    private List<String> drawPile;
+    private boolean normalPresidentRotation;
     private boolean presidentActionNeeded;
     private String presidentActionType;
+    private List<Integer> alivePlayerIDs;
     private int liberalLawImg;
     private int fascistLawImg;
+    private int nextPresidentID;
     private int activeLiberalLaws;
     private int activeFascistLaws;
     private int playerCount;
-    private int previousPresidentID;
     private int numOfPlayersInThisRound;
 
     @Override
@@ -63,23 +67,42 @@ public class LawUnveilingActivity extends AppCompatActivity {
         unveiledLawImageView.setVisibility(View.INVISIBLE);
         lawUnveilingReturnButton = findViewById(R.id.lawUnveilingReturnBtn);
         lawUnveilingReturnButton.setEnabled(false);
+        previousGovernmentRef = FirebaseDatabase.getInstance().getReference("PreviousGovernment");
+        nextPresidentIDRef = FirebaseDatabase.getInstance().getReference("NextPresidentID");
         playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
         newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
         winnerFactionRef = FirebaseDatabase.getInstance().getReference("WinnerFaction");
-        presidentIDRef = FirebaseDatabase.getInstance().getReference("PresidentID");
         playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        previousChancellorNameRef = FirebaseDatabase.getInstance().getReference("PreviousChancellorName");
-        helper = new Helper();
+        roundsWithoutChancellorRef = FirebaseDatabase.getInstance().getReference("RoundsWithoutChancellor");
+        gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
+        normalPresidentRotation = true;
         presidentActionNeeded = false;
         presidentActionType = "None";
+        alivePlayerIDs = new ArrayList<>();
         liberalLawImg = R.drawable.liberal_law;
         fascistLawImg = R.drawable.fascist_law;
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
+
+        nextPresidentIDListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    nextPresidentID = dataSnapshot.getValue(int.class);
+                    normalPresidentRotation = false;
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        nextPresidentIDRef.addListenerForSingleValueEvent(nextPresidentIDListener);
 
         activeLawsListener = new ValueEventListener() {
             @Override
@@ -100,33 +123,6 @@ public class LawUnveilingActivity extends AppCompatActivity {
             }
         };
         gameBoardRef.child("Active_Laws").addValueEventListener(activeLawsListener);
-
-        drawPileListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                drawPile = (List<String>) dataSnapshot.getValue();
-                if (drawPile.size() < 3) {
-                    //Discard pile needs to be shuffled to the draw pile in case the president gets to see the top 3 Laws in the draw pile
-                    int numOfLiberalLawsInDrawPile = 0;
-                    int numOfFascistLawsInDrawPile = 0;
-                    for (int i = 0; i < drawPile.size(); i++) {
-                        if (drawPile.get(i).equals("Liberal")) {
-                            numOfLiberalLawsInDrawPile++;
-                        } else {
-                            numOfFascistLawsInDrawPile++;
-                        }
-                    }
-                    List<String> shuffledDiscardPile = helper.ShuffleLawsToDrawPile(6 - numOfLiberalLawsInDrawPile - activeLiberalLaws, 11 - numOfFascistLawsInDrawPile - activeFascistLaws);
-                    drawPile.addAll(shuffledDiscardPile);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        gameBoardRef.child("Draw_Pile").addValueEventListener(drawPileListener);
 
         playerCountListener = new ValueEventListener() {
             @Override
@@ -196,19 +192,6 @@ public class LawUnveilingActivity extends AppCompatActivity {
         };
         newActiveLawRef.addValueEventListener(newActiveLawListener);
 
-        presidentIDListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                previousPresidentID = dataSnapshot.getValue(int.class);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        presidentIDRef.addListenerForSingleValueEvent(presidentIDListener);
-
         playersInThisRoundListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -222,36 +205,69 @@ public class LawUnveilingActivity extends AppCompatActivity {
         };
         playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
 
+        if (thisPlayer.isPresident) {
+            playerParameterListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Iterable<DataSnapshot> allPlayers = dataSnapshot.getChildren();
+                    for (DataSnapshot eachPlayer : allPlayers) {
+                        Iterable<DataSnapshot> playerParameters = eachPlayer.getChildren();
+                        for (DataSnapshot parameter : playerParameters) {
+                            if (parameter.getKey().equals("id") && !alivePlayerIDs.contains(parameter.getValue(int.class))) {
+                                alivePlayerIDs.add(parameter.getValue(int.class));
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            };
+            playersRef.addListenerForSingleValueEvent(playerParameterListener);
+        }
+
         lawUnveilingReturnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (activeLiberalLaws == 5 || activeFascistLaws == 6) {
-                    /*Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
+                    gameEndedRef.setValue(true);
+                    Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
                     goToGameEndingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
-                    startActivity(goToGameEndingActivity);*/
+                    startActivity(goToGameEndingActivity);
                 } else {
                     if (thisPlayer.isPresident) {
+                        roundsWithoutChancellorRef.setValue(0);
                         if (presidentActionNeeded) {
-                            /*
                             Intent presidentActionIntent = new Intent(getApplicationContext(), PresidentActionActivity.class);
                             presidentActionIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                             presidentActionIntent.putExtra("com.example.secret_hitler.ACTIONTYPE", presidentActionType);
-                            startActivity(presidentActionIntent);*/
+                            startActivity(presidentActionIntent);
                         } else {
-                            if (previousPresidentID + 1 < playerCount) {
-                                presidentIDRef.setValue(previousPresidentID + 1);
-                                playersRef.child("Player_" + (previousPresidentID + 1)).child("isPresident").setValue(true);
+                            if (normalPresidentRotation) {
+                                Collections.sort(alivePlayerIDs);
+                                int i = alivePlayerIDs.indexOf(thisPlayer.id);
+                                if (i + 1 == alivePlayerIDs.size()) {
+                                    i = 0;
+                                } else {
+                                    i++;
+                                }
+                                playersRef.child("Player_" + alivePlayerIDs.get(i)).child("isPresident").setValue(true);
+                                playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
                             } else {
-                                presidentIDRef.setValue(0);
-                                playersRef.child("Player_0").child("isPresident").setValue(true);
+                                playersRef.child("Player_" + nextPresidentID).child("isPresident").setValue(true);
+                                if (thisPlayer.id != nextPresidentID) {
+                                    playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
+                                }
+                                nextPresidentIDRef.setValue(null);
                             }
-                            playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
-                            //Check if a special rule happens before removing president completely!!
+                            previousGovernmentRef.child("PreviousPresident").setValue(thisPlayer.name);
                             thisPlayer.RemovePresidency();
                         }
                     } else if (thisPlayer.isChancellor) {
                         playersRef.child("Player_" + thisPlayer.id).child("isChancellor").setValue(false);
-                        previousChancellorNameRef.setValue(thisPlayer.name);
+                        previousGovernmentRef.child("PreviousChancellor").setValue(thisPlayer.name);
                         thisPlayer.RemoveChancellorStatus();
                     }
                     playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
@@ -264,12 +280,17 @@ public class LawUnveilingActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        nextPresidentIDRef.removeEventListener(nextPresidentIDListener);
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawsListener);
         playerCountRef.removeEventListener(playerCountListener);
         newActiveLawRef.removeEventListener(newActiveLawListener);
-        presidentIDRef.removeEventListener(presidentIDListener);
         playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
     }
 

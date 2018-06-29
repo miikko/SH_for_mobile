@@ -26,10 +26,6 @@ public class Player implements Parcelable{
         this.previousVote = previousVote;
     }
 
-    public String GetRole() {
-        return this.role;
-    }
-
     public void SetRole(String newRole) {
         this.role = newRole;
     }
@@ -60,6 +56,10 @@ public class Player implements Parcelable{
 
     public void VotedJa() {
         this.previousVote = "Ja";
+    }
+
+    public void Died() {
+        this.isAlive = false;
     }
 
     public Player (Parcel in) {

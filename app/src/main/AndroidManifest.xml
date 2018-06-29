@@ -18,8 +18,6 @@
         </activity>
         <activity android:name=".SecondActivity" />
         <activity android:name=".VotingActivity" />
-        <activity android:name=".ShowVoteActivity" />
-        <activity android:name=".ShowFactionActivity" />
         <activity android:name=".LobbyActivity" />
         <activity android:name=".StatusActivity" />
         <activity android:name=".ChooseChancellorActivity" />
@@ -27,6 +25,9 @@
         <activity android:name=".PresidentSelectLawsActivity" />
         <activity android:name=".LawUnveilingActivity" />
         <activity android:name=".ChancellorPickLawActivity" />
+        <activity android:name=".PresidentActionActivity" />
+        <activity android:name=".LastRoundVotesActivity" />
+        <activity android:name=".GameEndingActivity"></activity>
     </application>
 
 </manifest>

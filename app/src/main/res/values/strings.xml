@@ -22,7 +22,7 @@
     <string name="choose_chancellor_hint">This should display tips on how to choose the next Chancellor</string>
     <string name="choose_chancellor_lock_in_Btn">Lock In</string>
     <string name="presidentWaitingRoom_status">This should inform the president on how the voting is going.</string>
-    <string name="presidentWaitingRoom_advance_Btn">Advance/Return</string>
+    <string name="presidentWaitingRoom_advance_Btn">Advance</string>
     <string name="presidentWaitingRoom_ja_Btn">JA</string>
     <string name="presidentWaitingRoom_nein_Btn">NEIN</string>
     <string name="voting_ja_Btn">JA!</string>

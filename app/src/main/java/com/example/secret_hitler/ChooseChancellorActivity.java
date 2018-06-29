@@ -24,13 +24,19 @@ public class ChooseChancellorActivity extends AppCompatActivity {
     private TextView chooseChancellorTextView;
     private Spinner chancellorCandidateSpinner;
     private Button lockChancellorCandidateBtn;
+    private DatabaseReference playersAliveCountRef;
+    private DatabaseReference previousGovernmentRef;
     private DatabaseReference playerRef;
     private DatabaseReference chancellorCandidateNameRef;
+    private ValueEventListener playersAliveCountListener;
+    private ValueEventListener restrictedPlayerNamesListener;
     private ValueEventListener playerNameListener;
     private Player thisPlayer;
     private List<String> playerNames;
     private ArrayAdapter<String> spinnerAdapter;
+    private String previousPresidentName;
     private String previousChancellorName;
+    private int numOfPlayersAlive;
 
 
     @Override
@@ -42,17 +48,52 @@ public class ChooseChancellorActivity extends AppCompatActivity {
         chooseChancellorTextView.setText("Choose the Player that you want to be your Chancellor in this round from the Dropdown List.");
         chancellorCandidateSpinner = findViewById(R.id.chancellorCandidateSpinner);
         lockChancellorCandidateBtn = findViewById(R.id.lockChancellorCandidateBtn);
+        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
+        previousGovernmentRef = FirebaseDatabase.getInstance().getReference("PreviousGovernment");
         playerRef = FirebaseDatabase.getInstance().getReference("Players");
         chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
-        if (getIntent().hasExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME")) {
-            previousChancellorName = getIntent().getStringExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME");
-        } else {
-            previousChancellorName = "none";
-        }
+
+        playersAliveCountListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                numOfPlayersAlive = dataSnapshot.getValue(int.class);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playersAliveCountRef.addListenerForSingleValueEvent(playersAliveCountListener);
+
+        restrictedPlayerNamesListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    Iterable<DataSnapshot> bothRestrictedPlayerNames = dataSnapshot.getChildren();
+                    for (DataSnapshot eachRestrictedPlayerName : bothRestrictedPlayerNames) {
+                        if (eachRestrictedPlayerName.getKey().equals("PreviousPresident")) {
+                            previousPresidentName = eachRestrictedPlayerName.getValue().toString();
+                        } else {
+                            previousChancellorName = eachRestrictedPlayerName.getValue().toString();
+                        }
+                    }
+                } else {
+                    previousPresidentName = "None";
+                    previousChancellorName = "None";
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        previousGovernmentRef.addListenerForSingleValueEvent(restrictedPlayerNamesListener);
 
         playerNameListener = new ValueEventListener() {
             @Override
@@ -68,8 +109,11 @@ public class ChooseChancellorActivity extends AppCompatActivity {
                     }
                 }
                 playerNames.remove(thisPlayer.name);
-                if (!previousChancellorName.equals("none")) {
+                if (!previousChancellorName.equals("None")) {
                     playerNames.remove(previousChancellorName);
+                }
+                if (numOfPlayersAlive > 4 && !previousPresidentName.equals("None")) {
+                    playerNames.remove(previousPresidentName);
                 }
                 if (spinnerAdapter == null) {
                     spinnerAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.my_spinner_text, R.id.textView, playerNames);
@@ -100,8 +144,15 @@ public class ChooseChancellorActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        playersAliveCountRef.removeEventListener(playersAliveCountListener);
+        previousGovernmentRef.removeEventListener(restrictedPlayerNamesListener);
         playerRef.removeEventListener(playerNameListener);
     }
 

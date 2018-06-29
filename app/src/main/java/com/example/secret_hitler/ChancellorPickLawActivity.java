@@ -22,20 +22,15 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
     private ImageButton chancellorSecondLawImgBtn;
     private DatabaseReference chancellorsOptionsRef;
     private DatabaseReference gameBoardRef;
-    private DatabaseReference activeLawsRef;
-    private DatabaseReference discardedLawsRef;
     private DatabaseReference newActiveLawRef;
     private DatabaseReference chancellorNeededRef;
     private ValueEventListener chancellorsOptionsListener;
     private ValueEventListener activeLawsListener;
-    private ValueEventListener discardedLawsListener;
     private Player thisPlayer;
     private int liberalLawOptions;
     private int fascistLawOptions;
     private int activeLiberalLaws;
     private int activeFascistLaws;
-    private int discardedLiberalLaws;
-    private int discardedFascistLaws;
     private int liberalLawImg;
     private int fascistLawImg;
     private boolean firstLawIsLiberal;
@@ -52,8 +47,6 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
         chancellorSecondLawImgBtn = findViewById(R.id.chancellorSecondLawImgBtn);
         chancellorsOptionsRef = FirebaseDatabase.getInstance().getReference("ChancellorsOptions");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
-        activeLawsRef = FirebaseDatabase.getInstance().getReference("ActiveLaws");
-        discardedLawsRef = FirebaseDatabase.getInstance().getReference("DiscardedLaws");
         newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
         chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
         chancellorNeededRef.setValue(false);
@@ -118,26 +111,6 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
             }
         };
         gameBoardRef.child("Active_Laws").addListenerForSingleValueEvent(activeLawsListener);
-/*
-        discardedLawsListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Iterable<DataSnapshot> bothDiscardedLawCounts = dataSnapshot.getChildren();
-                for (DataSnapshot eachDiscardedLawCount : bothDiscardedLawCounts) {
-                    if (eachDiscardedLawCount.getKey().equals("Liberal")) {
-                        discardedLiberalLaws = eachDiscardedLawCount.getValue(int.class);
-                    } else {
-                        discardedFascistLaws = eachDiscardedLawCount.getValue(int.class);
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        discardedLawsRef.addListenerForSingleValueEvent(discardedLawsListener);*/
 
         chancellorFirstLawImgBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -148,11 +121,6 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
                 } else {
                     gameBoardRef.child("Active_Laws").child("Fascist").setValue(activeFascistLaws + 1);
                     newActiveLawRef.setValue("Fascist");
-                }
-                if (secondLawIsLiberal) {
-                    //discardedLawsRef.child("Liberal").setValue(discardedLiberalLaws + 1);
-                } else {
-                    //discardedLawsRef.child("Fascist").setValue(discardedFascistLaws + 1);
                 }
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
@@ -170,11 +138,6 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
                     gameBoardRef.child("Active_Laws").child("Fascist").setValue(activeFascistLaws + 1);
                     newActiveLawRef.setValue("Fascist");
                 }
-                if (firstLawIsLiberal) {
-                    //discardedLawsRef.child("Liberal").setValue(discardedLiberalLaws + 1);
-                } else {
-                    //discardedLawsRef.child("Fascist").setValue(discardedFascistLaws + 1);
-                }
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 startActivity(goToLawUnveilingActivity);
@@ -183,10 +146,14 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         chancellorsOptionsRef.removeEventListener(chancellorsOptionsListener);
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawsListener);
-        //discardedLawsRef.removeEventListener(discardedLawsListener);
     }
 }

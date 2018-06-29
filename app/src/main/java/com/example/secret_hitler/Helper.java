@@ -1,14 +1,11 @@
 package com.example.secret_hitler;
 
-import android.content.Context;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class Helper {
-    Random rand = new Random();
+    private Random rand = new Random();
 
 
     public String AssignRole(int playerCount, ArrayList<String> playerRoles) {
@@ -125,28 +122,8 @@ public class Helper {
     }
 
     public int AssignFirstPresidency(int playerCount) {
-        int firstPresidentID = 4;/*rand.nextInt(playerCount);*/
+        int firstPresidentID = rand.nextInt(playerCount);
         return firstPresidentID;
-    }
-
-    //This method should not be called if there are less than 3 total laws remaining.
-    //Database needs to be updated accordingly after calling this method.
-    public List<String> DrawLaws(int howMany, int liberalLawsRemaining, int fascistLawsRemaining) {
-        int tempLiberalLawsRemaining = liberalLawsRemaining;
-        int tempFascistLawsRemaining = fascistLawsRemaining;
-        List<String> drawnLaws = new ArrayList<>();
-        for (int i = 0; i < howMany; i++) {
-            int totalNumberOfLawsRemaining = tempLiberalLawsRemaining + tempFascistLawsRemaining;
-            int selectedLawNumber = rand.nextInt(totalNumberOfLawsRemaining);
-            if (selectedLawNumber < tempLiberalLawsRemaining) {
-                drawnLaws.add("Liberal");
-                tempLiberalLawsRemaining--;
-            } else {
-                drawnLaws.add("Fascist");
-                tempFascistLawsRemaining--;
-            }
-        }
-        return drawnLaws;
     }
 
     public List<String> ShuffleLawsToDrawPile(int liberalLawsToBeShuffled, int fascistLawsToBeShuffled) {

@@ -18,34 +18,41 @@ import com.google.firebase.database.ValueEventListener;
 public class VotingActivity extends AppCompatActivity {
     private Player thisPlayer;
     private TextView chooseVoteTextView;
+    private TextView gameEndedTextView;
     private Button jaBtn;
     private Button neinBtn;
     private Button votingAdvanceBtn;
-    private String chancellorCandidateName;
+    private DatabaseReference playersAliveCountRef;
+    private DatabaseReference roundsWithoutChancellorRef;
     private DatabaseReference chancellorCandidateNameRef;
     private DatabaseReference hitlerNameRef;
     private DatabaseReference gameBoardRef;
-    private DatabaseReference playerCountRef;
     private DatabaseReference thisPlayerRef;
     private DatabaseReference voteCountRef;
     private DatabaseReference chancellorNeededRef;
     private DatabaseReference playersRef;
     private DatabaseReference playersInThisRoundRef;
+    private DatabaseReference gameEndedRef;
+    private DatabaseReference winnerFactionRef;
+    private ValueEventListener playersAliveCountListener;
+    private ValueEventListener roundsWithoutChancellorListener;
     private ValueEventListener chancellorCandidateNameListener;
     private ValueEventListener hitlerNameListener;
     private ValueEventListener activeLawCountListener;
-    private ValueEventListener playerCountListener;
     private ValueEventListener voteCountListener;
     private ValueEventListener chancellorNeededListener;
     private ValueEventListener playersInThisRoundListener;
+    private String chancellorCandidateName;
     private String hitlerName;
     private boolean gameEnds;
     private boolean chancellorNeeded;
     private boolean chancellorWasElected;
+    private int numOfPlayersAlive;
+    private int roundsWithoutChancellor;
     private int activeFascistLaws;
+    private int activeLiberalLaws;
     private int jaVotes;
     private int neinVotes;
-    private int playerCount;
     private int numOfPlayersInThisRound;
 
     @Override
@@ -58,20 +65,51 @@ public class VotingActivity extends AppCompatActivity {
         }
 
         chooseVoteTextView = findViewById(R.id.chooseVoteTextView);
+        gameEndedTextView = findViewById(R.id.votingACGameEndedNoteTextView);
+        gameEndedTextView.setVisibility(View.INVISIBLE);
         jaBtn = findViewById(R.id.jaBtn);
         neinBtn = findViewById(R.id.neinBtn);
         votingAdvanceBtn = findViewById(R.id.votingAdvanceBtn);
         votingAdvanceBtn.setEnabled(false);
+        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
+        roundsWithoutChancellorRef = FirebaseDatabase.getInstance().getReference("RoundsWithoutChancellor");
         chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
         hitlerNameRef = FirebaseDatabase.getInstance().getReference("HitlerName");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
-        playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
         thisPlayerRef = FirebaseDatabase.getInstance().getReference("Players").child("Player_" + thisPlayer.id);
         voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
         chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
         playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
+        gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
+        winnerFactionRef = FirebaseDatabase.getInstance().getReference("Winner_Faction");
         gameEnds = false;
+
+        playersAliveCountListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                numOfPlayersAlive = dataSnapshot.getValue(int.class);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        playersAliveCountRef.addListenerForSingleValueEvent(playersAliveCountListener);
+
+        roundsWithoutChancellorListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                roundsWithoutChancellor = dataSnapshot.getValue(int.class);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        roundsWithoutChancellorRef.addListenerForSingleValueEvent(roundsWithoutChancellorListener);
 
         chancellorCandidateNameListener = new ValueEventListener() {
             @Override
@@ -90,7 +128,7 @@ public class VotingActivity extends AppCompatActivity {
         hitlerNameListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                hitlerName = "mike";/*dataSnapshot.getValue().toString();*/
+                hitlerName = dataSnapshot.getValue().toString();
             }
 
             @Override
@@ -107,7 +145,20 @@ public class VotingActivity extends AppCompatActivity {
                 for (DataSnapshot eachLawCount : bothLawCounts) {
                     if (eachLawCount.getKey().equals("Fascist")) {
                         activeFascistLaws = eachLawCount.getValue(int.class);
+                    } else {
+                        activeLiberalLaws = eachLawCount.getValue(int.class);
                     }
+                }
+                if (activeFascistLaws == 5) {
+                    gameEndedTextView.setText("The topmost Law was Fascist which means that the Fascists win the game with 6 Active Laws. Press the Advance-button to go to the Game-ending screen.");
+                    gameEndedTextView.setVisibility(View.VISIBLE);
+                    winnerFactionRef.setValue("Fascists");
+                    gameEnds = true;
+                } else if (activeLiberalLaws == 6) {
+                    gameEndedTextView.setText("The topmost Law was Liberal which means that the Liberals win the game with 5 Active Laws. Press the Advance-button to go to the Game-ending screen.");
+                    gameEndedTextView.setVisibility(View.VISIBLE);
+                    winnerFactionRef.setValue("Liberals");
+                    gameEnds = true;
                 }
             }
 
@@ -116,20 +167,7 @@ public class VotingActivity extends AppCompatActivity {
 
             }
         };
-        gameBoardRef.child("Active_Laws").addListenerForSingleValueEvent(activeLawCountListener);
-
-        playerCountListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                playerCount = dataSnapshot.getValue(int.class);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        playerCountRef.addListenerForSingleValueEvent(playerCountListener);
+        gameBoardRef.child("Active_Laws").addValueEventListener(activeLawCountListener);
 
         voteCountListener = new ValueEventListener() {
             @Override
@@ -142,13 +180,14 @@ public class VotingActivity extends AppCompatActivity {
                         neinVotes = eachVoteCount.getValue(int.class);
                     }
                 }
-                if (jaVotes + neinVotes == 2/*playerCount*/) {
+                if (jaVotes + neinVotes == numOfPlayersAlive) {
                     if (jaVotes > neinVotes) {
                         if (chancellorCandidateName.equals(hitlerName) && activeFascistLaws > 2) {
                             chooseVoteTextView.setText("Hitler has become the Chancellor after passing 3 Fascist Laws. Press the Advance-button to go to the Game-ending screen.");
+                            winnerFactionRef.setValue("Fascists");
                             gameEnds = true;
                             votingAdvanceBtn.setEnabled(true);
-                        } else if (thisPlayer.name.equals(chancellorCandidateName)) {
+                        } else if (thisPlayer.name.equals(chancellorCandidateName) && !chancellorWasElected) {
                             chooseVoteTextView.setText("You were elected as the Chancellor. Please wait while the President picks 2 Laws that they will pass to you.");
                             playersRef.child("Player_" + thisPlayer.id).child("isChancellor").setValue(true);
                             thisPlayer.SetAsChancellor();
@@ -159,7 +198,12 @@ public class VotingActivity extends AppCompatActivity {
                         chancellorWasElected = true;
                     } else {
                         chancellorWasElected = false;
-                        chooseVoteTextView.setText(chancellorCandidateName + " was not elected Chancellor. The game will now move on to the next round.");
+                        if (roundsWithoutChancellor % 3 == 0) {
+                            chooseVoteTextView.setText(chancellorCandidateName + "was not elected Chancellor. Now there have been " + roundsWithoutChancellor + " straight rounds without a Chancellor. This means that the topmost Law in the Draw pile becomes Active.");
+                        } else {
+                            chooseVoteTextView.setText(chancellorCandidateName + " was not elected Chancellor. Press the Advance-button to go to the next round.");
+                        }
+                        votingAdvanceBtn.setEnabled(true);
                     }
                 }
             }
@@ -207,7 +251,7 @@ public class VotingActivity extends AppCompatActivity {
                 thisPlayer.DidVote();
                 thisPlayer.VotedJa();
                 thisPlayerRef.child("hasVoted").setValue(true);
-                thisPlayerRef.child("lastVote").setValue("Ja");
+                thisPlayerRef.child("previousVote").setValue("Ja");
                 voteCountRef.child("Ja_Votes").setValue(jaVotes + 1);
 
                 chooseVoteTextView.setText("Waiting for everyone to finish voting");
@@ -222,7 +266,7 @@ public class VotingActivity extends AppCompatActivity {
                 thisPlayer.DidVote();
                 thisPlayer.VotedNein();
                 thisPlayerRef.child("hasVoted").setValue(true);
-                thisPlayerRef.child("lastVote").setValue("Nein");
+                thisPlayerRef.child("previousVote").setValue("Nein");
                 voteCountRef.child("Nein_Votes").setValue(neinVotes + 1);
 
                 chooseVoteTextView.setText("Waiting for everyone to finish voting");
@@ -235,11 +279,15 @@ public class VotingActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (gameEnds) {
-                    /*Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
+                    gameEndedRef.setValue(true);
+                    Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
                     goToGameEndingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
-                    startActivity(goToGameEndingActivity);*/
+                    startActivity(goToGameEndingActivity);
                 } else if (!chancellorWasElected) {
                     playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
+                    Intent goBackToSecondActivity = new Intent(getApplicationContext(), SecondActivity.class);
+                    goBackToSecondActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                    startActivity(goBackToSecondActivity);
 
                 } else if (thisPlayer.name.equals(chancellorCandidateName)) {
                     Intent chancellorGoPickLawIntent = new Intent(getApplicationContext(), ChancellorPickLawActivity.class);
@@ -256,12 +304,18 @@ public class VotingActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        playersAliveCountRef.removeEventListener(playersAliveCountListener);
+        roundsWithoutChancellorRef.removeEventListener(roundsWithoutChancellorListener);
         chancellorCandidateNameRef.removeEventListener(chancellorCandidateNameListener);
         hitlerNameRef.removeEventListener(hitlerNameListener);
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawCountListener);
-        playerCountRef.removeEventListener(playerCountListener);
         voteCountRef.removeEventListener(voteCountListener);
         chancellorNeededRef.removeEventListener(chancellorNeededListener);
         playersInThisRoundRef.removeEventListener(playersInThisRoundListener);

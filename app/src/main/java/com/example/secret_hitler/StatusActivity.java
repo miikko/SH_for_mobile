@@ -23,22 +23,17 @@ public class StatusActivity extends AppCompatActivity {
     private TextView lawCountTextView;
     private TextView leaderTextView;
     private TextView yourVoteIsNeededTextView;
-    private Button selectLawsBtn;
-    private Button clearLawsBtn;
     private Button chooseChancellorBtn;
     private Player thisPlayer;
     private String presidentName;
     private DatabaseReference gameBoardRef;
     private DatabaseReference playersRef;
     private DatabaseReference voteNeededRef;
-    private DatabaseReference previousChancellorNameRef;
     private ValueEventListener activeLawCountListener;
     private ValueEventListener playerParameterListener;
     private ValueEventListener voteNeededListener;
-    private ValueEventListener previousChancellorNameListener;
     private int fascistLawCount;
     private int liberalLawCount;
-    private String previousChancellorName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,15 +44,11 @@ public class StatusActivity extends AppCompatActivity {
         leaderTextView = findViewById(R.id.leaderTextView);
         yourVoteIsNeededTextView = findViewById(R.id.yourVoteIsNeededTextView);
         yourVoteIsNeededTextView.setVisibility(View.INVISIBLE);
-        selectLawsBtn = findViewById(R.id.selectLawsBtn);
-        clearLawsBtn = findViewById(R.id.clearLawsBtn);
         chooseChancellorBtn = findViewById(R.id.chooseChancellorBtn);
         chooseChancellorBtn.setVisibility(View.INVISIBLE);
-        previousChancellorName = "none";
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
         voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-        previousChancellorNameRef = FirebaseDatabase.getInstance().getReference("PreviousChancellorName");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
@@ -141,29 +132,11 @@ public class StatusActivity extends AppCompatActivity {
         };
         voteNeededRef.addValueEventListener(voteNeededListener);
 
-        previousChancellorNameListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    previousChancellorName = dataSnapshot.getValue().toString();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        previousChancellorNameRef.addListenerForSingleValueEvent(previousChancellorNameListener);
-
         chooseChancellorBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent chooseChancellorIntent = new Intent(getApplicationContext(), ChooseChancellorActivity.class);
                 chooseChancellorIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
-                if (!previousChancellorName.equals("none")) {
-                    chooseChancellorIntent.putExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME", previousChancellorName);
-                }
                 startActivity(chooseChancellorIntent);
             }
         });
@@ -175,7 +148,6 @@ public class StatusActivity extends AppCompatActivity {
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawCountListener);
         playersRef.removeEventListener(playerParameterListener);
         voteNeededRef.removeEventListener(voteNeededListener);
-        previousChancellorNameRef.removeEventListener(previousChancellorNameListener);
     }
 
 }

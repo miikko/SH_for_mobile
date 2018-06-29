@@ -22,6 +22,7 @@ public class LobbyActivity extends AppCompatActivity {
     private Button startGameButton;
     private TextView playerCountTextView;
     private TextView lobbyStatusTextView;
+    private DatabaseReference playersAliveCountRef;
     private DatabaseReference playerCountRef;
     private DatabaseReference playersRef;
     private DatabaseReference playersInThisRoundRef;
@@ -48,6 +49,7 @@ public class LobbyActivity extends AppCompatActivity {
         playerCountTextView = findViewById(R.id.playerCountTextView);
         lobbyStatusTextView = findViewById(R.id.lobbyStatusTextView);
         playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
+        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
         playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
 
@@ -165,14 +167,9 @@ public class LobbyActivity extends AppCompatActivity {
                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
                 rootRef.child("Players").setValue(null);
                 rootRef.child("PlayerCount").setValue(null);
-                rootRef.child("PresidentID").setValue(null);
                 rootRef.child("Game_Board").setValue(null);
-                rootRef.child("LawCount").setValue(null);
                 rootRef.child("VoteNeeded").setValue(null);
                 rootRef.child("ChancellorCandidateName").setValue(null);
-                rootRef.child("RemainingLaws").setValue(null);
-                rootRef.child("DiscardedLaws").setValue(null);
-                rootRef.child("ActiveLaws").setValue(null);
                 rootRef.child("ChancellorNeeded").setValue(null);
                 rootRef.child("ChancellorsOptions").setValue(null);
                 rootRef.child("PreviousChancellorName").setValue(null);
@@ -182,6 +179,13 @@ public class LobbyActivity extends AppCompatActivity {
                 rootRef.child("WinnerFaction").setValue(null);
                 rootRef.child("HitlerName").setValue(null);
                 rootRef.child("PlayersInThisRound").setValue(null);
+                rootRef.child("NextPresidentID").setValue(null);
+                rootRef.child("RoundsWithoutChancellor").setValue(0);
+                rootRef.child("PreviousGovernment").setValue(null);
+                rootRef.child("PlayersAliveCount").setValue(null);
+                rootRef.child("Game_Ended").setValue(false);
+                rootRef.child("Winner_Faction").setValue(null);
+                rootRef.child("Dead_Players").setValue(null);
             }
         });
 
@@ -231,6 +235,11 @@ public class LobbyActivity extends AppCompatActivity {
                     DatabaseReference newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
                     newActiveLawRef.setValue("None");
                     playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
+                    playersAliveCountRef.setValue(playerCount);
+                    DatabaseReference roundsWithoutChancellorRef = FirebaseDatabase.getInstance().getReference("RoundsWithoutChancellor");
+                    roundsWithoutChancellorRef.setValue(0);
+                    DatabaseReference gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
+                    gameEndedRef.setValue(false);
 
                     Intent startGameIntent = new Intent(getApplicationContext(), SecondActivity.class);
                     startGameIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
@@ -238,6 +247,11 @@ public class LobbyActivity extends AppCompatActivity {
                 }
             });
         }
+
+    }
+
+    @Override
+    public void onBackPressed() {
 
     }
 
