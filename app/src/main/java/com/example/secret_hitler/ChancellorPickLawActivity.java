@@ -22,8 +22,7 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
     private ImageButton chancellorSecondLawImgBtn;
     private DatabaseReference chancellorsOptionsRef;
     private DatabaseReference gameBoardRef;
-    private DatabaseReference newActiveLawRef;
-    private DatabaseReference chancellorNeededRef;
+    private DatabaseReference triggersRef;
     private ValueEventListener chancellorsOptionsListener;
     private ValueEventListener activeLawsListener;
     private Player thisPlayer;
@@ -47,9 +46,8 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
         chancellorSecondLawImgBtn = findViewById(R.id.chancellorSecondLawImgBtn);
         chancellorsOptionsRef = FirebaseDatabase.getInstance().getReference("ChancellorsOptions");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
-        newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
-        chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
-        chancellorNeededRef.setValue(false);
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
+        triggersRef.child("Chancellor_Needed").setValue(false);
         liberalLawImg = R.drawable.liberal_law;
         fascistLawImg = R.drawable.fascist_law;
         firstLawIsLiberal = true;
@@ -117,10 +115,10 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (firstLawIsLiberal) {
                     gameBoardRef.child("Active_Laws").child("Liberal").setValue(activeLiberalLaws + 1);
-                    newActiveLawRef.setValue("Liberal");
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("Liberal");
                 } else {
                     gameBoardRef.child("Active_Laws").child("Fascist").setValue(activeFascistLaws + 1);
-                    newActiveLawRef.setValue("Fascist");
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("Fascist");
                 }
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
@@ -133,10 +131,10 @@ public class ChancellorPickLawActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (secondLawIsLiberal) {
                     gameBoardRef.child("Active_Laws").child("Liberal").setValue(activeLiberalLaws + 1);
-                    newActiveLawRef.setValue("Liberal");
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("Liberal");
                 } else {
                     gameBoardRef.child("Active_Laws").child("Fascist").setValue(activeFascistLaws + 1);
-                    newActiveLawRef.setValue("Fascist");
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("Fascist");
                 }
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);

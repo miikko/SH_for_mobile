@@ -28,12 +28,10 @@ public class PresidentActionActivity extends AppCompatActivity {
     private ImageView factionImageView;
     private Spinner playerNamesSpinner;
     private Button confirmBtn;
-    private DatabaseReference previousGovernmentRef;
+    private DatabaseReference governmentRef;
     private DatabaseReference gameBoardRef;
     private DatabaseReference playersRef;
-    private DatabaseReference playerCountRef;
-    private DatabaseReference nextPresidentIDRef;
-    private DatabaseReference playersInThisRoundRef;
+    private DatabaseReference countersRef;
     private ValueEventListener activeLawsListener;
     private ValueEventListener drawPileListener;
     private ValueEventListener playerParameterListener;
@@ -75,12 +73,10 @@ public class PresidentActionActivity extends AppCompatActivity {
         playerNamesSpinner.setEnabled(false);
         confirmBtn = findViewById(R.id.presidentActionConfirmBtn);
         confirmBtn.setEnabled(false);
-        previousGovernmentRef = FirebaseDatabase.getInstance().getReference("PreviousGovernment");
+        governmentRef = FirebaseDatabase.getInstance().getReference("Government");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
-        nextPresidentIDRef = FirebaseDatabase.getInstance().getReference("NextPresidentID");
-        playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
+        countersRef = FirebaseDatabase.getInstance().getReference("Counters");
         helper = new Helper();
         alivePlayerIDs = new ArrayList<>();
         revealFaction = false;
@@ -106,7 +102,7 @@ public class PresidentActionActivity extends AppCompatActivity {
 
             }
         };
-        playerCountRef.addListenerForSingleValueEvent(playerCountListener);
+        countersRef.child("Player_Count").addListenerForSingleValueEvent(playerCountListener);
 
         switch (actionType) {
 
@@ -226,7 +222,7 @@ public class PresidentActionActivity extends AppCompatActivity {
 
                     }
                 };
-                nextPresidentIDRef.addListenerForSingleValueEvent(nextPresidentIDListener);
+                governmentRef.child("Next_President_ID").addListenerForSingleValueEvent(nextPresidentIDListener);
                 break;
 
             default:
@@ -302,7 +298,7 @@ public class PresidentActionActivity extends AppCompatActivity {
 
             }
         };
-        playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
+        countersRef.child("Players_In_This_Round").addValueEventListener(playersInThisRoundListener);
 
         confirmBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -326,9 +322,9 @@ public class PresidentActionActivity extends AppCompatActivity {
                         nextPresidentID = playerNamesAndIDs.get(selectedPlayerName);
                         playersRef.child("Player_" + nextPresidentID).child("isPresident").setValue(true);
                         if (thisPlayer.id + 1 < playerCount) {
-                            nextPresidentIDRef.setValue(thisPlayer.id + 1);
+                            governmentRef.child("Next_President_ID").setValue(thisPlayer.id + 1);
                         } else {
-                            nextPresidentIDRef.setValue(0);
+                            governmentRef.child("Next_President_ID").setValue(0);
                         }
                     } else {
                         if (actionType.equals("Execute")) {
@@ -351,12 +347,12 @@ public class PresidentActionActivity extends AppCompatActivity {
                             if (thisPlayer.id != nextPresidentID) {
                                 playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
                             }
-                            nextPresidentIDRef.setValue(null);
+                            governmentRef.child("Next_President_ID").setValue(null);
                         }
                     }
-                    playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
+                    countersRef.child("Players_In_This_Round").setValue(numOfPlayersInThisRound + 1);
                     playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
-                    previousGovernmentRef.child("PreviousPresident").setValue(thisPlayer.name);
+                    governmentRef.child("Previous_Government").child("PreviousPresident").setValue(thisPlayer.name);
                     thisPlayer.RemovePresidency();
                     Intent goBackToSecondActivity = new Intent(getApplicationContext(), SecondActivity.class);
                     goBackToSecondActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
@@ -369,15 +365,15 @@ public class PresidentActionActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        playerCountRef.removeEventListener(playerCountListener);
+        countersRef.child("Player_Count").removeEventListener(playerCountListener);
         playersRef.removeEventListener(playerIDListener);
-        playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
+        countersRef.child("Players_In_This_Round").removeEventListener(playersInThisRoundListener);
         if (actionType.equals("See_Laws")) {
             gameBoardRef.child("Active_Laws").removeEventListener(activeLawsListener);
             gameBoardRef.child("Draw_Pile").removeEventListener(drawPileListener);
         } else {
             if (actionType.equals("Execute")) {
-                nextPresidentIDRef.removeEventListener(nextPresidentIDListener);
+                governmentRef.child("Next_President_ID").removeEventListener(nextPresidentIDListener);
             }
             playersRef.removeEventListener(playerParameterListener);
         }

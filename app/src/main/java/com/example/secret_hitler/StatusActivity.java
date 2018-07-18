@@ -28,12 +28,16 @@ public class StatusActivity extends AppCompatActivity {
     private String presidentName;
     private DatabaseReference gameBoardRef;
     private DatabaseReference playersRef;
-    private DatabaseReference voteNeededRef;
+    private DatabaseReference triggersRef;
+    private DatabaseReference governmentRef;
     private ValueEventListener activeLawCountListener;
     private ValueEventListener playerParameterListener;
     private ValueEventListener voteNeededListener;
+    private ValueEventListener restrictedPlayerNamesListener;
     private int fascistLawCount;
     private int liberalLawCount;
+    private String previousPresidentName;
+    private String previousChancellorName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +52,8 @@ public class StatusActivity extends AppCompatActivity {
         chooseChancellorBtn.setVisibility(View.INVISIBLE);
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
+        governmentRef = FirebaseDatabase.getInstance().getReference("Government");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
@@ -57,7 +62,6 @@ public class StatusActivity extends AppCompatActivity {
         activeLawCountListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.d("children", dataSnapshot.getChildrenCount() + "");
                 if (dataSnapshot.exists()) {
                     Iterable<DataSnapshot> bothActiveLawCounts = dataSnapshot.getChildren();
                     for (DataSnapshot eachActiveLawCount : bothActiveLawCounts) {
@@ -130,13 +134,40 @@ public class StatusActivity extends AppCompatActivity {
 
             }
         };
-        voteNeededRef.addValueEventListener(voteNeededListener);
+        triggersRef.child("Vote_Needed").addValueEventListener(voteNeededListener);
+
+        restrictedPlayerNamesListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    Iterable<DataSnapshot> bothRestrictedPlayerNames = dataSnapshot.getChildren();
+                    for (DataSnapshot eachRestrictedPlayerName : bothRestrictedPlayerNames) {
+                        if (eachRestrictedPlayerName.getKey().equals("PreviousPresident")) {
+                            previousPresidentName = eachRestrictedPlayerName.getValue().toString();
+                        } else {
+                            previousChancellorName = eachRestrictedPlayerName.getValue().toString();
+                        }
+                    }
+                } else {
+                    previousPresidentName = "None";
+                    previousChancellorName = "None";
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        governmentRef.child("Previous_Government").addListenerForSingleValueEvent(restrictedPlayerNamesListener);
 
         chooseChancellorBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent chooseChancellorIntent = new Intent(getApplicationContext(), ChooseChancellorActivity.class);
                 chooseChancellorIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
+                chooseChancellorIntent.putExtra("com.example.secret_hitler.PREVIOUSPRESIDENTNAME", previousPresidentName);
+                chooseChancellorIntent.putExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME", previousChancellorName);
                 startActivity(chooseChancellorIntent);
             }
         });
@@ -147,7 +178,8 @@ public class StatusActivity extends AppCompatActivity {
         super.onDestroy();
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawCountListener);
         playersRef.removeEventListener(playerParameterListener);
-        voteNeededRef.removeEventListener(voteNeededListener);
+        triggersRef.child("Vote_Needed").removeEventListener(voteNeededListener);
+        governmentRef.child("Previous_Government").removeEventListener(restrictedPlayerNamesListener);
     }
 
 }

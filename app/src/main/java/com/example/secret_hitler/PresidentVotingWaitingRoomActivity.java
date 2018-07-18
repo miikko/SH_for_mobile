@@ -2,6 +2,7 @@ package com.example.secret_hitler;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +14,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -25,18 +28,13 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
     private Button presidentVoteYesBtn;
     private Button presidentVoteNoBtn;
     private Button presidentAdvanceBtn;
-    private DatabaseReference roundsWithoutChancellorRef;
-    private DatabaseReference nextPresidentIDRef;
+    private DatabaseReference governmentRef;
     private DatabaseReference hitlerNameRef;
-    private DatabaseReference playersAliveCountRef;
-    private DatabaseReference playersInThisRoundRef;
     private DatabaseReference gameBoardRef;
-    private DatabaseReference voteCountRef;
-    private DatabaseReference voteNeededRef;
-    private DatabaseReference chancellorCandidateNameRef;
+    private DatabaseReference countersRef;
+    private DatabaseReference triggersRef;
     private DatabaseReference thisPlayerRef;
     private DatabaseReference playersRef;
-    private DatabaseReference gameEndedRef;
     private DatabaseReference winnerFactionRef;
     private ValueEventListener roundsWithoutChancellorListener;
     private ValueEventListener nextPresidentIDListener;
@@ -79,17 +77,12 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
         presidentAdvanceBtn = findViewById(R.id.presidentAdvanceBtn);
         presidentAdvanceBtn.setVisibility(View.INVISIBLE);
         presidentAdvanceBtn.setEnabled(false);
-        roundsWithoutChancellorRef = FirebaseDatabase.getInstance().getReference("RoundsWithoutChancellor");
-        nextPresidentIDRef = FirebaseDatabase.getInstance().getReference("NextPresidentID");
+        governmentRef = FirebaseDatabase.getInstance().getReference("Government");
         hitlerNameRef = FirebaseDatabase.getInstance().getReference("HitlerName");
-        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
-        playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
-        voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
-        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-        chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
+        countersRef = FirebaseDatabase.getInstance().getReference("Counters");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
         winnerFactionRef = FirebaseDatabase.getInstance().getReference("Winner_Faction");
         helper = new Helper();
         alivePlayerIDs = new ArrayList<>();
@@ -116,7 +109,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
 
             }
         };
-        roundsWithoutChancellorRef.addListenerForSingleValueEvent(roundsWithoutChancellorListener);
+        countersRef.child("Rounds_Without_Chancellor").addListenerForSingleValueEvent(roundsWithoutChancellorListener);
 
         nextPresidentIDListener = new ValueEventListener() {
             @Override
@@ -132,7 +125,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
 
             }
         };
-        nextPresidentIDRef.addListenerForSingleValueEvent(nextPresidentIDListener);
+        governmentRef.child("Next_President_ID").addListenerForSingleValueEvent(nextPresidentIDListener);
 
         hitlerNameListener = new ValueEventListener() {
             @Override
@@ -158,7 +151,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
 
             }
         };
-        playersAliveCountRef.addListenerForSingleValueEvent(playersAliveCountListener);
+        countersRef.child("Players_Alive_Count").addListenerForSingleValueEvent(playersAliveCountListener);
 
         playersInThisRoundListener = new ValueEventListener() {
             @Override
@@ -171,7 +164,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
 
             }
         };
-        playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
+        countersRef.child("Players_In_This_Round").addValueEventListener(playersInThisRoundListener);
 
         activeLawCountListener = new ValueEventListener() {
             @Override
@@ -244,7 +237,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                         chancellorWasElected = true;
                     } else {
                         chancellorWasElected = false;
-                        if (roundsWithoutChancellor % 3 == 0) {
+                        if (roundsWithoutChancellor > 0 && roundsWithoutChancellor % 3 == 0) {
                             votingStatusForPresidentTextView.setText(chancellorCandidateName + " was not elected Chancellor. Now there have been " + roundsWithoutChancellor + " straight rounds without a Chancellor. This means that the topmost Law in the Draw pile becomes Active.");
                             if (drawPile.get(0).equals("Liberal")) {
                                 gameBoardRef.child("Active_Laws").child("Liberal").setValue(liberalLawsActive + 1);
@@ -256,13 +249,18 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                         } else {
                             votingStatusForPresidentTextView.setText(chancellorCandidateName + " was not elected Chancellor. Click the Advance-button to go to the next round.");
                         }
-                        roundsWithoutChancellorRef.setValue(roundsWithoutChancellor + 1);
+                        countersRef.child("Rounds_Without_Chancellor").setValue(roundsWithoutChancellor + 1);
                     }
                     presidentAdvanceBtn.setEnabled(true);
                     presidentAdvanceBtn.setVisibility(View.VISIBLE);
-                    playersInThisRoundRef.setValue(0);
-                    voteNeededRef.setValue(false);
-                    chancellorCandidateNameRef.setValue(null);
+                    if (numOfPlayersInThisRound == numOfPlayersAlive) {
+                        countersRef.child("Players_In_This_Round").setValue(0);
+                    } else {
+                        countersRef.child("Players_In_This_Round").setValue(numOfPlayersInThisRound - numOfPlayersAlive); //This line will hopefully prevent any problems with the "Second Activity" check
+                    }
+
+                    triggersRef.child("Vote_Needed").setValue(false);
+                    governmentRef.child("Chancellor_Candidate_Name").setValue(null);
                 }
             }
 
@@ -271,7 +269,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
 
             }
         };
-        voteCountRef.addValueEventListener(voteCountListener);
+        countersRef.child("Vote_Count").addValueEventListener(voteCountListener);
 
         playerIDListener = new ValueEventListener() {
             @Override
@@ -301,11 +299,29 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                 thisPlayer.VotedJa();
                 thisPlayerRef.child("hasVoted").setValue(true);
                 thisPlayerRef.child("previousVote").setValue("Ja");
-                voteCountRef.child("Ja_Votes").setValue(jaVotes + 1);
+                countersRef.child("Vote_Count").child("Ja_Votes").runTransaction(new Transaction.Handler() {
+                    @Override
+                    public Transaction.Result doTransaction(MutableData mutableData) {
+                        Integer currentValue = mutableData.getValue(Integer.class);
+                        if (currentValue == null) {
+                            mutableData.setValue(1);
+                        } else {
+                            mutableData.setValue(currentValue++);
+                        }
+                        return Transaction.success(mutableData);
+                    }
+
+                    @Override
+                    public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
+
+                    }
+                });
 
                 votingStatusForPresidentTextView.setText("Waiting for everyone to finish voting");
                 presidentVoteYesBtn.setEnabled(false);
                 presidentVoteNoBtn.setEnabled(false);
+                presidentVoteYesBtn.setVisibility(View.INVISIBLE);
+                presidentVoteNoBtn.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -316,11 +332,29 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                 thisPlayer.VotedNein();
                 thisPlayerRef.child("hasVoted").setValue(true);
                 thisPlayerRef.child("previousVote").setValue("Nein");
-                voteCountRef.child("Nein_Votes").setValue(neinVotes + 1);
+                countersRef.child("Vote_Count").child("Nein_Votes").runTransaction(new Transaction.Handler() {
+                    @Override
+                    public Transaction.Result doTransaction(MutableData mutableData) {
+                        Integer currentValue = mutableData.getValue(Integer.class);
+                        if (currentValue == null) {
+                            mutableData.setValue(1);
+                        } else {
+                            mutableData.setValue(currentValue++);
+                        }
+                        return Transaction.success(mutableData);
+                    }
+
+                    @Override
+                    public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
+
+                    }
+                });
 
                 votingStatusForPresidentTextView.setText("Waiting for everyone to finish voting");
                 presidentVoteYesBtn.setEnabled(false);
                 presidentVoteNoBtn.setEnabled(false);
+                presidentVoteYesBtn.setVisibility(View.INVISIBLE);
+                presidentVoteNoBtn.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -328,7 +362,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (gameEnds) {
-                    gameEndedRef.setValue(true);
+                    triggersRef.child("Game_Ended").setValue(true);
                     Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
                     goToGameEndingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                     startActivity(goToGameEndingActivity);
@@ -339,7 +373,23 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                     presidentSelectLawsIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                     startActivity(presidentSelectLawsIntent);
                 } else {
-                    playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
+                    countersRef.child("Players_In_This_Round").runTransaction(new Transaction.Handler() {
+                        @Override
+                        public Transaction.Result doTransaction(MutableData mutableData) {
+                            Integer currentValue = mutableData.getValue(Integer.class);
+                            if (currentValue == null) {
+                                mutableData.setValue(1);
+                            } else {
+                                mutableData.setValue(currentValue++);
+                            }
+                            return Transaction.success(mutableData);
+                        }
+
+                        @Override
+                        public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
+
+                        }
+                    });
                     if (normalPresidentRotation) {
                         Collections.sort(alivePlayerIDs);
                         int i = alivePlayerIDs.indexOf(thisPlayer.id);
@@ -354,7 +404,7 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
                         if (thisPlayer.id != nextPresidentID) {
                             playersRef.child("Player_" + thisPlayer.id).child("isPresident").setValue(false);
                         }
-                        nextPresidentIDRef.setValue(null);
+                        governmentRef.child("Next_President_ID").setValue(null);
                     }
                     thisPlayer.RemovePresidency();
                     Intent goBackToSecondActivity = new Intent(getApplicationContext(), SecondActivity.class);
@@ -373,14 +423,14 @@ public class PresidentVotingWaitingRoomActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        roundsWithoutChancellorRef.removeEventListener(roundsWithoutChancellorListener);
-        nextPresidentIDRef.removeEventListener(nextPresidentIDListener);
+        countersRef.child("Rounds_Without_Chancellor").removeEventListener(roundsWithoutChancellorListener);
+        governmentRef.child("Next_President_ID").removeEventListener(nextPresidentIDListener);
         hitlerNameRef.removeEventListener(hitlerNameListener);
-        playersAliveCountRef.removeEventListener(playersAliveCountListener);
-        playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
+        countersRef.child("Players_Alive_Count").removeEventListener(playersAliveCountListener);
+        countersRef.child("Players_In_This_Round").removeEventListener(playersInThisRoundListener);
         gameBoardRef.child("Active_Laws").removeEventListener(activeLawCountListener);
         gameBoardRef.child("Draw_Pile").removeEventListener(drawPileListener);
-        voteCountRef.removeEventListener(voteCountListener);
+        countersRef.child("Vote_Count").removeEventListener(voteCountListener);
         playersRef.removeEventListener(playerIDListener);
     }
 

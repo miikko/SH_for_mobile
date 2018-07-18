@@ -27,15 +27,11 @@ public class SecondActivity extends AppCompatActivity {
     private TextView winConditionsTextView;
     private TextView waitForOthersTextView;
     private TextView playerExecutedTextView;
-    private DatabaseReference playersAliveCountRef;
-    private DatabaseReference playerCountRef;
     private DatabaseReference hitlerNameRef;
-    private DatabaseReference newActiveLawRef;
-    private DatabaseReference voteCountRef;
-    private DatabaseReference playersInThisRoundRef;
-    private DatabaseReference voteNeededRef;
+    private DatabaseReference gameBoardRef;
+    private DatabaseReference countersRef;
+    private DatabaseReference triggersRef;
     private DatabaseReference playersRef;
-    private DatabaseReference gameEndedRef;
     private DatabaseReference winnerFactionRef;
     private DatabaseReference deadPlayersRef;
     private ValueEventListener playersAliveCountListener;
@@ -68,15 +64,11 @@ public class SecondActivity extends AppCompatActivity {
         waitForOthersTextView.setText("Waiting for other players...");
         playerExecutedTextView = findViewById(R.id.playerExecutedTextView);
         playerExecutedTextView.setVisibility(View.INVISIBLE);
-        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
-        playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
         hitlerNameRef = FirebaseDatabase.getInstance().getReference("HitlerName");
-        newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
-        voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
-        playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
-        voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
+        gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
+        countersRef = FirebaseDatabase.getInstance().getReference("Counters");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
         winnerFactionRef = FirebaseDatabase.getInstance().getReference("Winner_Faction");
         deadPlayersRef = FirebaseDatabase.getInstance().getReference("Dead_Players");
 
@@ -118,7 +110,7 @@ public class SecondActivity extends AppCompatActivity {
 
             }
         };
-        playersAliveCountRef.addValueEventListener(playersAliveCountListener);
+        countersRef.child("Players_Alive_Count").addValueEventListener(playersAliveCountListener);
 
         playerCountListener = new ValueEventListener() {
             @Override
@@ -131,12 +123,14 @@ public class SecondActivity extends AppCompatActivity {
 
             }
         };
-        playerCountRef.addListenerForSingleValueEvent(playerCountListener);
+        countersRef.child("Player_Count").addListenerForSingleValueEvent(playerCountListener);
 
         hitlerNameListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                hitlerName = dataSnapshot.getValue().toString();
+                if (dataSnapshot.exists()) {
+                    hitlerName = dataSnapshot.getValue().toString();
+                }
             }
 
             @Override
@@ -153,7 +147,7 @@ public class SecondActivity extends AppCompatActivity {
                 for (DataSnapshot player : players) {
                     Iterable<DataSnapshot> parameters = player.getChildren();
                     int thisID = -1;
-                    String thisName = "";
+                    String thisName;
                     boolean youAreDead = false;
                     boolean someoneIsDead = false;
                     for (DataSnapshot parameter : parameters) {
@@ -180,6 +174,7 @@ public class SecondActivity extends AppCompatActivity {
                                 if (thisPlayer.name.equals(hitlerName)) {
                                     playerExecutedTextView.setText("You have been executed and so the Liberals have won. Press the Advance-button to go to the Game-ending screen.");
                                     winnerFactionRef.setValue("Liberals");
+                                    triggersRef.child("Game_Ended").setValue(true);
                                 } else {
                                     if (thisPlayer.isPresident) {
                                         int i;
@@ -199,7 +194,7 @@ public class SecondActivity extends AppCompatActivity {
                                     playerExecutedTextView.setText("You have been executed. Press the Advance-button to go to the Game-ending screen, where you will wait for the others to finish the game.");
                                     playersRef.child("Player_" + thisPlayer.id).setValue(null);
                                     deadPlayersRef.child("Player_" + thisPlayer.id).setValue(thisPlayer);
-                                    playersAliveCountRef.setValue(numOfPlayersAlive - 1);
+                                    countersRef.child("Players_Alive_Count").setValue(numOfPlayersAlive - 1);
                                 }
                                 thisPlayer.Died();
                                 goToGameEndingBtn.setEnabled(true);
@@ -231,16 +226,16 @@ public class SecondActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 numOfPlayersInThisRound = dataSnapshot.getValue(int.class);
-                if (numOfPlayersInThisRound < numOfPlayersAlive) {
-                    seeOtherVotesBtn.setEnabled(false);
-                    statusBtn.setEnabled(false);
-                } else {
-                    newActiveLawRef.setValue("None");
-                    voteCountRef.child("Ja_Votes").setValue(0);
-                    voteCountRef.child("Nein_Votes").setValue(0);
+                if (numOfPlayersInThisRound == numOfPlayersAlive) {
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("None");
+                    countersRef.child("Vote_Count").child("Ja_Votes").setValue(0);
+                    countersRef.child("Vote_Count").child("Nein_Votes").setValue(0);
                     waitForOthersTextView.setVisibility(View.INVISIBLE);
                     seeOtherVotesBtn.setEnabled(true);
                     statusBtn.setEnabled(true);
+                } else {
+                    seeOtherVotesBtn.setEnabled(false);
+                    statusBtn.setEnabled(false);
                 }
             }
 
@@ -249,7 +244,7 @@ public class SecondActivity extends AppCompatActivity {
 
             }
         };
-        playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
+        countersRef.child("Players_In_This_Round").addValueEventListener(playersInThisRoundListener);
 
         voteNeededListener = new ValueEventListener() {
             @Override
@@ -266,7 +261,7 @@ public class SecondActivity extends AppCompatActivity {
 
             }
         };
-        voteNeededRef.addValueEventListener(voteNeededListener);
+        triggersRef.child("Vote_Needed").addValueEventListener(voteNeededListener);
 
         votingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -298,7 +293,6 @@ public class SecondActivity extends AppCompatActivity {
         goToGameEndingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                gameEndedRef.setValue(true);
                 Intent goToGameEndingActivity = new Intent(getApplicationContext(), GameEndingActivity.class);
                 goToGameEndingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 startActivity(goToGameEndingActivity);
@@ -317,11 +311,11 @@ public class SecondActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        playersAliveCountRef.removeEventListener(playersAliveCountListener);
-        playerCountRef.removeEventListener(playerCountListener);
+        countersRef.child("Players_Alive_Count").removeEventListener(playersAliveCountListener);
+        countersRef.child("Player_Count").removeEventListener(playerCountListener);
         hitlerNameRef.removeEventListener(hitlerNameListener);
-        playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
-        voteNeededRef.removeEventListener(voteNeededListener);
+        countersRef.child("Players_In_This_Round").removeEventListener(playersInThisRoundListener);
+        triggersRef.child("Vote_Needed").removeEventListener(voteNeededListener);
         playersRef.removeEventListener(playerParameterListener);
     }
 

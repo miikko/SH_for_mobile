@@ -23,7 +23,7 @@ public class GameEndingActivity extends AppCompatActivity {
     private DatabaseReference playersRef;
     private DatabaseReference deadPlayersRef;
     private DatabaseReference winnerFactionRef;
-    private DatabaseReference gameEndedRef;
+    private DatabaseReference triggersRef;
     private ValueEventListener playerParameterListener;
     private ValueEventListener deadPlayerParameterListener;
     private ValueEventListener winnerFactionListener;
@@ -46,7 +46,7 @@ public class GameEndingActivity extends AppCompatActivity {
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
         deadPlayersRef = FirebaseDatabase.getInstance().getReference("Dead_Players");
         winnerFactionRef = FirebaseDatabase.getInstance().getReference("Winner_Faction");
-        gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
         playerNames = new ArrayList<>();
         playerRoles = new ArrayList<>();
         newLine = System.getProperty("line.separator");
@@ -150,7 +150,7 @@ public class GameEndingActivity extends AppCompatActivity {
 
             }
         };
-        gameEndedRef.addValueEventListener(gameEndedListener);
+        triggersRef.child("Game_Ended").addValueEventListener(gameEndedListener);
 
     }
 }

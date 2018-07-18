@@ -25,7 +25,7 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
     private ImageButton presidentSecondImgBtn;
     private ImageButton presidentThirdImgBtn;
     private DatabaseReference gameBoardRef;
-    private DatabaseReference chancellorNeededRef;
+    private DatabaseReference triggersRef;
     private DatabaseReference chancellorsOptionsRef;
     private ValueEventListener drawPileListener;
     private Player thisPlayer;
@@ -54,7 +54,7 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
         liberalLawImg = R.drawable.liberal_law;
         fascistLawImg = R.drawable.fascist_law;
         gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
-        chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
         chancellorsOptionsRef = FirebaseDatabase.getInstance().getReference("ChancellorsOptions");
         helper = new Helper();
         firstBtnImgSet = false;
@@ -136,7 +136,7 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
                     chancellorsOptionsRef.child("Liberal").setValue(1);
                     chancellorsOptionsRef.child("Fascist").setValue(1);
                 }
-                chancellorNeededRef.setValue(true);
+                triggersRef.child("Chancellor_Needed").setValue(true);
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 startActivity(goToLawUnveilingActivity);
@@ -156,7 +156,7 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
                     chancellorsOptionsRef.child("Liberal").setValue(1);
                     chancellorsOptionsRef.child("Fascist").setValue(1);
                 }
-                chancellorNeededRef.setValue(true);
+                triggersRef.child("Chancellor_Needed").setValue(true);
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 startActivity(goToLawUnveilingActivity);
@@ -176,7 +176,7 @@ public class PresidentSelectLawsActivity extends AppCompatActivity {
                     chancellorsOptionsRef.child("Liberal").setValue(1);
                     chancellorsOptionsRef.child("Fascist").setValue(1);
                 }
-                chancellorNeededRef.setValue(true);
+                triggersRef.child("Chancellor_Needed").setValue(true);
                 Intent goToLawUnveilingActivity = new Intent(getApplicationContext(), LawUnveilingActivity.class);
                 goToLawUnveilingActivity.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 startActivity(goToLawUnveilingActivity);

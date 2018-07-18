@@ -2,6 +2,7 @@ package com.example.secret_hitler;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -12,6 +13,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -20,21 +23,18 @@ import java.util.List;
 
 public class LobbyActivity extends AppCompatActivity {
     private Button startGameButton;
+    private Button resetButton;
     private TextView playerCountTextView;
     private TextView lobbyStatusTextView;
-    private DatabaseReference playersAliveCountRef;
-    private DatabaseReference playerCountRef;
+    private DatabaseReference countersRef;
     private DatabaseReference playersRef;
-    private DatabaseReference playersInThisRoundRef;
-    private ValueEventListener playerCountListener;
+    private DatabaseReference gameBoardRef;
     private ValueEventListener playerParameterListener;
-    private ValueEventListener playersInThisRoundListener;
     private Helper helper;
     private Player thisPlayer;
     private ArrayList<String> playerRoles;
     private int playerCount;
     private boolean presidentChosen;
-    private int numOfPlayersInThisRound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,34 +45,25 @@ public class LobbyActivity extends AppCompatActivity {
         playerRoles = new ArrayList<>();
 
         startGameButton = findViewById(R.id.startGameBtn);
-        Button resetButton = findViewById(R.id.resetBtn);
+        resetButton = findViewById(R.id.resetBtn);
         playerCountTextView = findViewById(R.id.playerCountTextView);
         lobbyStatusTextView = findViewById(R.id.lobbyStatusTextView);
-        playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
-        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
+        countersRef = FirebaseDatabase.getInstance().getReference("Counters");
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
-        playersInThisRoundRef = FirebaseDatabase.getInstance().getReference("PlayersInThisRound");
+        gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
         }
 
-        if (getIntent().hasExtra("com.example.secret_hitler.PLAYERCOUNT")) {
-            playerCount = getIntent().getIntExtra("com.example.secret_hitler.PLAYERCOUNT", playerCount);
-            playerCount++;
-        }
-
-        playerCountListener = new ValueEventListener() {
+        playerParameterListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    playerCount = dataSnapshot.getValue(int.class);
-                } else {
-                    playerCount = 0;
-                }
+                playerCount = (int) dataSnapshot.getChildrenCount();
+                countersRef.child("Player_Count").setValue(playerCount);
                 playerCountTextView.setText("Number of players: " + playerCount);
                 if (playerCount < 5) {
-                    lobbyStatusTextView.setText("You don't have enough player to start playing.");
+                    lobbyStatusTextView.setText("You don't have enough players to start playing.");
                     startGameButton.setEnabled(false);
                 } else if (playerCount > 10) {
                     int numberOfExcessPlayers = playerCount - 10;
@@ -112,19 +103,9 @@ public class LobbyActivity extends AppCompatActivity {
                     lobbyStatusTextView.setText("There will be " + liberalCount + " Liberals, " + fascistCount + " Fascist(s) and 1 Hitler in this game.");
                     startGameButton.setEnabled(true);
                 }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        playerCountRef.addValueEventListener(playerCountListener);
-
-        playerParameterListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Iterable<DataSnapshot> players = dataSnapshot.getChildren();
+                playerRoles.clear();
                 for (DataSnapshot player : players) {
                     Iterable<DataSnapshot> playerParameters = player.getChildren();
                     for (DataSnapshot parameter : playerParameters) {
@@ -144,48 +125,19 @@ public class LobbyActivity extends AppCompatActivity {
         };
         playersRef.addValueEventListener(playerParameterListener);
 
-        playersInThisRoundListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    numOfPlayersInThisRound = dataSnapshot.getValue(int.class);
-                } else {
-                    playersInThisRoundRef.setValue(0);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        playersInThisRoundRef.addValueEventListener(playersInThisRoundListener);
-
         resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
                 rootRef.child("Players").setValue(null);
-                rootRef.child("PlayerCount").setValue(null);
                 rootRef.child("Game_Board").setValue(null);
-                rootRef.child("VoteNeeded").setValue(null);
-                rootRef.child("ChancellorCandidateName").setValue(null);
-                rootRef.child("ChancellorNeeded").setValue(null);
                 rootRef.child("ChancellorsOptions").setValue(null);
-                rootRef.child("PreviousChancellorName").setValue(null);
-                rootRef.child("VoteCount").child("Ja_Votes").setValue(0);
-                rootRef.child("VoteCount").child("Nein_Votes").setValue(0);
-                rootRef.child("NewActiveLaw").setValue("None");
                 rootRef.child("WinnerFaction").setValue(null);
                 rootRef.child("HitlerName").setValue(null);
-                rootRef.child("PlayersInThisRound").setValue(null);
-                rootRef.child("NextPresidentID").setValue(null);
-                rootRef.child("RoundsWithoutChancellor").setValue(0);
-                rootRef.child("PreviousGovernment").setValue(null);
-                rootRef.child("PlayersAliveCount").setValue(null);
-                rootRef.child("Game_Ended").setValue(false);
-                rootRef.child("Winner_Faction").setValue(null);
                 rootRef.child("Dead_Players").setValue(null);
+                rootRef.child("Government").setValue(null);
+                rootRef.child("Triggers").setValue(null);
+                rootRef.child("Counters").setValue(null);
             }
         });
 
@@ -206,40 +158,45 @@ public class LobbyActivity extends AppCompatActivity {
                         int firstPresidentID = helper.AssignFirstPresidency(playerCount);
                         DatabaseReference presidentStatusRef = playersRef.child("Player_" + firstPresidentID).child("isPresident");
                         presidentStatusRef.setValue(true);
-                        FirebaseDatabase.getInstance().getReference("PresidentID").setValue(firstPresidentID);
-
-                        //Creates the Game board in the database.
-                        //The Game board contains the draw pile and the active law trackers
-                        DatabaseReference gameBoardRef = FirebaseDatabase.getInstance().getReference("Game_Board");
 
                         //Resets both of the active law trackers
                         gameBoardRef.child("Active_Laws").child("Liberal").setValue(0);
                         gameBoardRef.child("Active_Laws").child("Fascist").setValue(0);
 
                         //Shuffles the draw pile locally and posts the laws in order to the database
-                        DatabaseReference drawPileRef = gameBoardRef.child("Draw_Pile");
                         List<String> drawPile = helper.ShuffleLawsToDrawPile(6, 11);
-                        drawPileRef.setValue(drawPile);
+                        gameBoardRef.child("Draw_Pile").setValue(drawPile);
                     }
 
-                    DatabaseReference voteNeededRef = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-                    voteNeededRef.setValue(false);
-                    DatabaseReference voteCountRef = FirebaseDatabase.getInstance().getReference("VoteCount");
-                    voteCountRef.child("Ja_Votes").setValue(0);
-                    voteCountRef.child("Nein_Votes").setValue(0);
-                    DatabaseReference chancellorNeededRef = FirebaseDatabase.getInstance().getReference("ChancellorNeeded");
-                    chancellorNeededRef.setValue(false);
+                    DatabaseReference triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
+                    triggersRef.child("Vote_Needed").setValue(false);
+                    triggersRef.child("Game_Ended").setValue(false);
+                    triggersRef.child("Chancellor_Needed").setValue(false);
+                    countersRef.child("Players_Alive_Count").setValue(playerCount);
+                    countersRef.child("Players_In_This_Round").runTransaction(new Transaction.Handler() {
+                        @Override
+                        public Transaction.Result doTransaction(MutableData mutableData) {
+                            Integer currentValue = mutableData.getValue(Integer.class);
+                            if (currentValue == null) {
+                                mutableData.setValue(1);
+                            } else {
+                                mutableData.setValue(currentValue++);
+                            }
+                            return Transaction.success(mutableData);
+                        }
+
+                        @Override
+                        public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
+
+                        }
+                    });
+                    countersRef.child("Vote_Count").child("Ja_Votes").setValue(0);
+                    countersRef.child("Vote_Count").child("Nein_Votes").setValue(0);
+                    countersRef.child("Rounds_Without_Chancellor").setValue(0);
                     DatabaseReference chancellorsOptionsRef = FirebaseDatabase.getInstance().getReference("ChancellorsOptions");
                     chancellorsOptionsRef.child("Liberal").setValue(0);
                     chancellorsOptionsRef.child("Fascist").setValue(0);
-                    DatabaseReference newActiveLawRef = FirebaseDatabase.getInstance().getReference("NewActiveLaw");
-                    newActiveLawRef.setValue("None");
-                    playersInThisRoundRef.setValue(numOfPlayersInThisRound + 1);
-                    playersAliveCountRef.setValue(playerCount);
-                    DatabaseReference roundsWithoutChancellorRef = FirebaseDatabase.getInstance().getReference("RoundsWithoutChancellor");
-                    roundsWithoutChancellorRef.setValue(0);
-                    DatabaseReference gameEndedRef = FirebaseDatabase.getInstance().getReference("Game_Ended");
-                    gameEndedRef.setValue(false);
+                    gameBoardRef.child("Active_Laws").child("New_Active_Law").setValue("None");
 
                     Intent startGameIntent = new Intent(getApplicationContext(), SecondActivity.class);
                     startGameIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
@@ -250,17 +207,16 @@ public class LobbyActivity extends AppCompatActivity {
 
     }
 
+    /*
     @Override
     public void onBackPressed() {
 
-    }
+    }*/
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        playerCountRef.removeEventListener(playerCountListener);
         playersRef.removeEventListener(playerParameterListener);
-        playersInThisRoundRef.removeEventListener(playersInThisRoundListener);
     }
 
 }

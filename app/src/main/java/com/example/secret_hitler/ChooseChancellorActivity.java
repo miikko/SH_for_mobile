@@ -24,12 +24,11 @@ public class ChooseChancellorActivity extends AppCompatActivity {
     private TextView chooseChancellorTextView;
     private Spinner chancellorCandidateSpinner;
     private Button lockChancellorCandidateBtn;
-    private DatabaseReference playersAliveCountRef;
-    private DatabaseReference previousGovernmentRef;
+    private DatabaseReference countersRef;
+    private DatabaseReference governmentRef;
     private DatabaseReference playerRef;
-    private DatabaseReference chancellorCandidateNameRef;
+    private DatabaseReference triggersRef;
     private ValueEventListener playersAliveCountListener;
-    private ValueEventListener restrictedPlayerNamesListener;
     private ValueEventListener playerNameListener;
     private Player thisPlayer;
     private List<String> playerNames;
@@ -48,13 +47,19 @@ public class ChooseChancellorActivity extends AppCompatActivity {
         chooseChancellorTextView.setText("Choose the Player that you want to be your Chancellor in this round from the Dropdown List.");
         chancellorCandidateSpinner = findViewById(R.id.chancellorCandidateSpinner);
         lockChancellorCandidateBtn = findViewById(R.id.lockChancellorCandidateBtn);
-        playersAliveCountRef = FirebaseDatabase.getInstance().getReference("PlayersAliveCount");
-        previousGovernmentRef = FirebaseDatabase.getInstance().getReference("PreviousGovernment");
+        countersRef = FirebaseDatabase.getInstance().getReference("Counters");
+        governmentRef = FirebaseDatabase.getInstance().getReference("Government");
         playerRef = FirebaseDatabase.getInstance().getReference("Players");
-        chancellorCandidateNameRef = FirebaseDatabase.getInstance().getReference("ChancellorCandidateName");
+        triggersRef = FirebaseDatabase.getInstance().getReference("Triggers");
 
         if (getIntent().hasExtra("com.example.secret_hitler.PLAYER")) {
             thisPlayer = getIntent().getParcelableExtra("com.example.secret_hitler.PLAYER");
+        }
+        if (getIntent().hasExtra("com.example.secret_hitler.PREVIOUSPRESIDENTNAME")) {
+            previousPresidentName = getIntent().getStringExtra("com.example.secret_hitler.PREVIOUSPRESIDENTNAME");
+        }
+        if (getIntent().hasExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME")) {
+            previousChancellorName = getIntent().getStringExtra("com.example.secret_hitler.PREVIOUSCHANCELLORNAME");
         }
 
         playersAliveCountListener = new ValueEventListener() {
@@ -68,32 +73,7 @@ public class ChooseChancellorActivity extends AppCompatActivity {
 
             }
         };
-        playersAliveCountRef.addListenerForSingleValueEvent(playersAliveCountListener);
-
-        restrictedPlayerNamesListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    Iterable<DataSnapshot> bothRestrictedPlayerNames = dataSnapshot.getChildren();
-                    for (DataSnapshot eachRestrictedPlayerName : bothRestrictedPlayerNames) {
-                        if (eachRestrictedPlayerName.getKey().equals("PreviousPresident")) {
-                            previousPresidentName = eachRestrictedPlayerName.getValue().toString();
-                        } else {
-                            previousChancellorName = eachRestrictedPlayerName.getValue().toString();
-                        }
-                    }
-                } else {
-                    previousPresidentName = "None";
-                    previousChancellorName = "None";
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        };
-        previousGovernmentRef.addListenerForSingleValueEvent(restrictedPlayerNamesListener);
+        countersRef.child("Players_Alive_Count").addListenerForSingleValueEvent(playersAliveCountListener);
 
         playerNameListener = new ValueEventListener() {
             @Override
@@ -103,18 +83,12 @@ public class ChooseChancellorActivity extends AppCompatActivity {
                 for (DataSnapshot player : players) {
                     Iterable<DataSnapshot> parameters = player.getChildren();
                     for (DataSnapshot parameter : parameters) {
-                        if (parameter.getKey().equals("name")) {
+                        if (parameter.getKey().equals("name") && (!parameter.getValue().equals(previousChancellorName) || (numOfPlayersAlive > 4 && !parameter.getValue().equals(previousPresidentName)))) {
                             playerNames.add(parameter.getValue().toString());
                         }
                     }
                 }
                 playerNames.remove(thisPlayer.name);
-                if (!previousChancellorName.equals("None")) {
-                    playerNames.remove(previousChancellorName);
-                }
-                if (numOfPlayersAlive > 4 && !previousPresidentName.equals("None")) {
-                    playerNames.remove(previousPresidentName);
-                }
                 if (spinnerAdapter == null) {
                     spinnerAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.my_spinner_text, R.id.textView, playerNames);
                     chancellorCandidateSpinner.setAdapter(spinnerAdapter);
@@ -132,9 +106,8 @@ public class ChooseChancellorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String selectedChancellorCandidate = chancellorCandidateSpinner.getSelectedItem().toString();
-                chancellorCandidateNameRef.setValue(selectedChancellorCandidate);
-                DatabaseReference voteNeeded = FirebaseDatabase.getInstance().getReference("VoteNeeded");
-                voteNeeded.setValue(true);
+                governmentRef.child("Chancellor_Candidate_Name").setValue(selectedChancellorCandidate);
+                triggersRef.child("Vote_Needed").setValue(true);
                 Intent moveToPresidentWaitingRoomIntent = new Intent(getApplicationContext(), PresidentVotingWaitingRoomActivity.class);
                 moveToPresidentWaitingRoomIntent.putExtra("com.example.secret_hitler.PLAYER", thisPlayer);
                 moveToPresidentWaitingRoomIntent.putExtra("com.example.secret_hitler.CHANCELLORCANDIDATENAME", selectedChancellorCandidate);
@@ -151,8 +124,7 @@ public class ChooseChancellorActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        playersAliveCountRef.removeEventListener(playersAliveCountListener);
-        previousGovernmentRef.removeEventListener(restrictedPlayerNamesListener);
+        countersRef.child("Players_Alive_Count").removeEventListener(playersAliveCountListener);
         playerRef.removeEventListener(playerNameListener);
     }
 

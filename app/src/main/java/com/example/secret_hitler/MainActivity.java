@@ -1,6 +1,7 @@
 package com.example.secret_hitler;
 
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -24,13 +25,15 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private TextView hintTextView;
+    private TextView appVersionTextView;
     private EditText nameEditText;
     private Button joinGameButton;
     private DatabaseReference playersRef;
     private ValueEventListener playersEventListener;
     private List<String> playerNames;
     private String thisPlayerName;
-    private int playerCount;
+    private int appVersionCode;
+    private int playerID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,21 +42,24 @@ public class MainActivity extends AppCompatActivity {
 
         hintTextView = findViewById(R.id.firstActivityHintTextView);
         hintTextView.setText("Join the game by typing your name and pressing the button.");
+        appVersionTextView = findViewById(R.id.appVersionTextView);
         nameEditText = findViewById(R.id.nameEditText);
         nameEditText.setSingleLine(); //Without this line the user input checker may not work
         nameEditText.setCursorVisible(false);
         joinGameButton = findViewById(R.id.joinGameBtn);
         joinGameButton.setEnabled(false);
         playersRef = FirebaseDatabase.getInstance().getReference("Players");
+        playerNames = new ArrayList<>();
+        appVersionCode = BuildConfig.VERSION_CODE;
+
+        appVersionTextView.setText("Application version: " + appVersionCode);
 
         playersEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                playerCount = (int) dataSnapshot.getChildrenCount();
-                DatabaseReference playerCountRef = FirebaseDatabase.getInstance().getReference("PlayerCount");
-                playerCountRef.setValue(playerCount);
+                playerID = (int) dataSnapshot.getChildrenCount();
+                playerNames.clear();
                 Iterable<DataSnapshot> allPlayers = dataSnapshot.getChildren();
-                playerNames = new ArrayList<>();
                 for (DataSnapshot eachPlayer : allPlayers) {
                     Iterable<DataSnapshot> playerParameters = eachPlayer.getChildren();
                     for (DataSnapshot parameter : playerParameters) {
@@ -115,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 //ADDING PLAYER TO THE DATABASE
-                int playerID = playerCount;
                 thisPlayerName = nameEditText.getText().toString();
                 Player newPlayer = new Player(playerID, "unknown", thisPlayerName, false, false, true, false, "none");
                 playersRef.child("Player_" + playerID).setValue(newPlayer);
@@ -123,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent confirmRoleIntent = new Intent(getApplicationContext(), LobbyActivity.class);
                 confirmRoleIntent.putExtra("com.example.secret_hitler.PLAYER", newPlayer);
-                confirmRoleIntent.putExtra("com.example.secret_hitler.PLAYERCOUNT", playerCount);
                 startActivity(confirmRoleIntent);
             }
         });
